@@ -185,3 +185,38 @@ auslösen. Der Test öffnet stattdessen zwei Tabs mit derselben (Cookie-)Sitzung
 Tab B zeigt noch den veralteten ANWESEND-Stand und versucht ebenfalls auszuchecken — das simuliert
 einen echten Wettlauf (zwei Geräte/Reiter) und prüft damit tatsächlich die DB-Konstraint samt
 kontrollierter Fehlerbehandlung, nicht nur das clientseitige Ausblenden des Buttons.
+
+## Phase 3
+
+**`/staff/abwesend` und `/staff/ueberfaellig` sind disjunkt.** Beide Seiten filtern dieselbe Menge
+aktiver Abwesenheiten über `deriveStatus` (`src/lib/staff-queries.ts#getActiveAbsencesByStatus`) —
+ein Schüler erscheint nie in beiden Listen gleichzeitig, passend zu den getrennten Routen aus
+Abschnitt 6.
+
+**Korrektur- und Stornier-UI als wiederverwendbare Komponenten.** `AbsenceCorrectionSheet` bearbeitet
+sowohl die aktuell aktive Abwesenheit als auch einzelne Historieneinträge auf der Schülerdetailseite
+— eine Formularimplementierung für beide Fälle. Eine Korrektur, die `checkedInAt` entfernt, macht
+eine abgeschlossene Abwesenheit wieder aktiv (und umgekehrt); das kann laut Abschnitt 3.2 die
+`one_active_absence`-Regel verletzen, wenn der Schüler zwischenzeitlich bereits eine neue aktive
+Abwesenheit hat — dieser Fall wird wie beim Auschecken sauber abgefangen (`P2002` →
+kontrollierte Fehlermeldung statt Exception).
+
+**Verlängerungsfreigabe ohne eigene Übersichtsseite.** Abschnitt 6 sieht dafür keine eigene Route
+vor. Offene Anfragen erscheinen stattdessen als Kurzliste auf `/staff` (Dashboard) und als Aktion
+(„Genehmigen"/„Ablehnen") direkt auf der jeweiligen Schülerseite — keine zusätzliche, im Auftrag
+nicht vorgesehene Route.
+
+**Audit-Log-Verifikation im E2E-Test per direkter Prisma-Abfrage.** Eine Admin-Audit-Log-**Ansicht**
+ist laut Abschnitt 6 erst Teil von Phase 4. Der Playwright-Test für „Mitarbeiter korrigiert eine
+Rückkehrzeit → Audit-Log enthält Vorher/Nachher" instanziiert dafür einen eigenen `PrismaClient`
+und liest den geschriebenen `AuditLog`-Eintrag direkt aus der Test-Datenbank — Backend-Zustand
+verifizieren, ohne auf eine noch nicht existierende UI zu warten.
+
+**Jeder E2E-Test verwendet einen eigenen, in keinem anderen Testfall mutierten Schüler.** Ein
+anfänglich flakiger Testlauf (Audit-Log wurde im parallelen 2-Worker-Lauf gelegentlich nicht
+gefunden) ließ sich auf zwei Ursachen zurückführen: den mehrdeutigen `.first()`-Selektor für den
+„Bearbeiten"-Button (Schüler haben durch die zufällige Seed-Historie oft mehrere solcher Buttons —
+jetzt gezielt auf den Abschnitt „Aktuelle Abwesenheit" eingegrenzt) sowie einen Schüler
+(`finn.r`), der gleichzeitig von `e2e/absences.spec.ts` mutiert wurde. Der Fremd-Einchecken-Test
+nutzt seitdem `mia.h`, der in keiner anderen Testdatei vorkommt; zusätzlich pollt die
+Audit-Log-Abfrage kurz nach, um unter Last robust zu bleiben.

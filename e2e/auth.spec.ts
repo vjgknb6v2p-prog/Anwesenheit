@@ -39,8 +39,9 @@ test.describe("Login je Rolle", () => {
     await login(page, "k.weber@internat.de", "Staff!2026");
     await expect(page).toHaveURL("/staff");
     await expect(
-      page.getByRole("heading", { name: /Hallo, Katrin Weber/ }),
+      page.getByRole("heading", { name: "Dashboard" }),
     ).toBeVisible();
+    await expect(page.getByRole("link", { name: "Überfällig" })).toBeVisible();
   });
 
   test("Admin landet nach Login auf /admin", async ({ page }) => {
