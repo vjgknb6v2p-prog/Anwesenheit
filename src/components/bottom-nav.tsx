@@ -15,9 +15,10 @@ const NAV_ITEMS = [
 /**
  * PROMPT.md Abschnitt 6: Bottom-Tab-Navigation mit 4 Einträgen für Schüler.
  * `env(safe-area-inset-bottom)` sorgt für ausreichend Abstand auf Geräten
- * mit Home-Indicator (Abschnitt 7).
+ * mit Home-Indicator (Abschnitt 7). `unreadCount` (Abschnitt 8: "Glocke mit
+ * Badge") wird serverseitig im Layout ermittelt und hier nur angezeigt.
  */
-export function BottomNav() {
+export function BottomNav({ unreadCount = 0 }: { unreadCount?: number }) {
   const pathname = usePathname();
 
   return (
@@ -27,18 +28,34 @@ export function BottomNav() {
     >
       {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
         const active = pathname === href;
+        const showBadge = href === "/benachrichtigungen" && unreadCount > 0;
         return (
           <Link
             key={href}
             href={href}
             aria-current={active ? "page" : undefined}
             className={cn(
-              "flex min-h-11 flex-1 flex-col items-center justify-center gap-1 py-2 text-xs",
+              "relative flex min-h-11 flex-1 flex-col items-center justify-center gap-1 py-2 text-xs",
               active ? "text-primary" : "text-muted-foreground",
             )}
           >
-            <Icon className="h-5 w-5" aria-hidden="true" />
-            {label}
+            <span className="relative">
+              <Icon className="h-5 w-5" aria-hidden="true" />
+              {showBadge && (
+                <span
+                  aria-hidden="true"
+                  className="bg-status-absent text-status-absent-foreground absolute -top-1 -right-1.5 flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[10px] font-medium"
+                >
+                  {unreadCount > 9 ? "9+" : unreadCount}
+                </span>
+              )}
+            </span>
+            <span>
+              {label}
+              {showBadge && (
+                <span className="sr-only"> ({unreadCount} ungelesen)</span>
+              )}
+            </span>
           </Link>
         );
       })}

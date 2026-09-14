@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { logoutAction } from "@/actions/auth";
 import { Button } from "@/components/ui/button";
+import { getSessionUser } from "@/lib/authz";
+import { db } from "@/lib/db";
 
 const NAV_ITEMS = [
   { href: "/admin", label: "Live-Übersicht" },
@@ -8,6 +10,7 @@ const NAV_ITEMS = [
   { href: "/admin/mitarbeiter", label: "Mitarbeiter" },
   { href: "/admin/abwesenheiten", label: "Abwesenheiten" },
   { href: "/admin/statistiken", label: "Statistiken" },
+  { href: "/admin/benachrichtigungen", label: "Benachrichtigungen" },
   { href: "/admin/audit", label: "Audit-Log" },
   { href: "/admin/wohnbereiche", label: "Wohnbereiche" },
   { href: "/admin/einstellungen", label: "Einstellungen" },
@@ -15,17 +18,22 @@ const NAV_ITEMS = [
 
 /**
  * Admin-Bereich nutzt wie `/staff` eine Top-Navigation (Tablet/Desktop statt
- * Bottom-Tab-Bar). Die Navigation verlinkt bewusst nur Seiten, die in dieser
- * Phase existieren — `/admin/benachrichtigungen` (Phase 6) ist laut
- * PROMPT.md Abschnitt 6 zwar für den Admin-Bereich vorgesehen, aber erst in
- * einer späteren Phase dran (siehe docs/decisions.md: keine
- * Platzhalter-Navigationseinträge).
+ * Bottom-Tab-Bar).
  */
-export default function AdminLayout({
+export default async function AdminLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  // `getSessionUser()` statt `requireRole()`: nur für die Badge-Zahl
+  // (Abschnitt 8) — jede Seite prüft ihren Zugriff selbst (Abschnitt 5).
+  const user = await getSessionUser();
+  const unreadCount = user
+    ? await db.notification.count({
+        where: { userId: user.id, readAt: null },
+      })
+    : 0;
+
   return (
     <div className="min-h-screen">
       <header className="border-b">
@@ -37,6 +45,11 @@ export default function AdminLayout({
               className="hover:bg-accent min-h-11 rounded-xl px-3 py-2 text-sm font-medium"
             >
               {item.label}
+              {item.href === "/admin/benachrichtigungen" && unreadCount > 0 && (
+                <span className="bg-status-absent text-status-absent-foreground ml-1.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[10px] font-medium">
+                  {unreadCount > 9 ? "9+" : unreadCount}
+                </span>
+              )}
             </Link>
           ))}
           <form action={logoutAction} className="ml-auto">

@@ -20,6 +20,17 @@ const PUBLIC_PATHS = [
   "/login",
   "/passwort-vergessen",
   "/passwort-zuruecksetzen",
+  // Kein Browser mit Session, sondern externe Aufrufer mit eigener Auth:
+  // /api/v1/cron/tick prüft `CRON_SECRET` selbst (Abschnitt 8). PWA-Anlagen
+  // (Manifest, Icons, Service Worker, Offline-Fallback) müssen unabhängig
+  // vom Login-Status ladbar sein — u. a., damit der Service Worker sie beim
+  // Installieren cachen kann, bevor überhaupt eine Session existiert.
+  "/api/v1/cron",
+  "/manifest.webmanifest",
+  "/icon-192.png",
+  "/icon-512.png",
+  "/sw.js",
+  "/offline",
 ];
 
 function isPublicPath(pathname: string): boolean {

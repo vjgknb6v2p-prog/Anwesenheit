@@ -31,5 +31,11 @@ export async function markNotificationReadAction(
     data: { readAt: new Date() },
   });
 
+  // Alle drei Rollen-Inboxen teilen sich diese Action (siehe
+  // src/components/notifications-list.tsx) — welche davon betroffen ist,
+  // hängt von der Rolle des Nutzers ab, alle drei zu revalidieren ist
+  // unschädlich (Next überspringt nicht besuchte Pfade ohnehin).
   revalidatePath("/benachrichtigungen");
+  revalidatePath("/staff/benachrichtigungen");
+  revalidatePath("/admin/benachrichtigungen");
 }

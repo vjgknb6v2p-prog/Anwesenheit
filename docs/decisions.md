@@ -329,3 +329,76 @@ escaped. Für dieses überschaubare, feste Format lohnt sich keine zusätzliche 
 Mitarbeiter überschreibt der Route Handler einen mitgegebenen `residentialAreaId`-Parameter
 serverseitig auf den eigenen Wohnbereich — dieselbe Regel wie auf der Seite, nicht nur clientseitig
 ausgeblendet.
+
+## Phase 6
+
+**Hand geschriebener Service Worker statt `next-pwa`.** `next-pwa` (und sein aktiv gepflegter Fork
+`@ducanh2912/next-pwa`) hakt sich per `next.config.js#webpack()`-Callback in den Build ein und lässt
+Workbox darüber den Service Worker generieren. Dieses Projekt baut aber mit `next build --turbopack`
+(seit Phase 0 so festgelegt) — Turbopack führt die `webpack()`-Konfiguration nicht aus, wodurch
+`next-pwa` mit Turbopack grundsätzlich unvereinbar ist. Ein Wechsel zurück auf Webpack für den Build
+wäre eine Regression der in Phase 0 getroffenen Stack-Entscheidung. Stattdessen liegt unter
+`public/sw.js` ein kleiner, von Hand geschriebener Service Worker (Install/Activate/Fetch/Push/
+Notificationclick, keine externe Workbox-Laufzeitbibliothek) — bewusst minimal, da der überwiegende
+Teil der App personenbezogene Live-Daten zeigt und aggressives Caching diese veraltet ausliefern
+würde. Analog zur shadcn/ui-Entscheidung aus Phase 0 wird die Stack-Zeile in `CLAUDE.md` dadurch
+nicht geändert (next-pwa bleibt die im Auftrag genannte Referenz), die tatsächliche Umsetzung weicht
+aus demselben technischen Grund ab.
+
+**App-Icons per `next/og` `ImageResponse` statt Bild-Tool.** Diese Sandbox hat weder ImageMagick
+noch eine Node-Bildbibliothek (`sharp` u. Ä.) installiert. `next/og`s `ImageResponse` (Next-Bordmittel,
+Satori-basiert) rendert JSX zu PNG zur Laufzeit — genutzt in `src/app/icon-192.png/route.tsx` und
+`icon-512.png/route.tsx`. Bewusst rein geometrisch (farbiger Grund + weißer Punkt, passend zum
+Status-Punkt-Motiv aus `StatusBadge`), damit keine Schriftart geladen werden muss. `#2563eb` ist
+eine feste Hex-Näherung an `--status-info` (`globals.css`, dort als `oklch()` definiert) — Manifest
+`theme_color` und Icon-Hintergrund brauchen einen konkreten CSS-Farbwert.
+
+**`/manifest.webmanifest`, Icons, `/offline` und `/sw.js` öffentlich (PUBLIC_PATHS in
+`src/auth.config.ts`).** Ohne das würde die Auth-Middleware jede Anfrage ohne Session dorthin zu
+`/login` umleiten — auch die des Service Workers selbst beim Installieren (`cache.addAll(...)` lädt
+z. B. die Offline-Seite bereits vor jedem Login). `/api/v1/cron/tick` ist aus demselben Grund
+öffentlich: der Aufrufer ist kein Browser mit Session, sondern ein externer Scheduler mit eigener
+Auth (`CRON_SECRET`-Header, vom Route Handler selbst geprüft).
+
+**Idempotenz des Cron-Tick über einen DB-Unique-Index, nicht `findFirst` + `create`.** Neue Spalte
+`Notification.sourceId` (Migration `add_notification_source_id`) plus
+`@@unique([userId, type, sourceId])`. Der Route Handler versucht `create` und fängt `P2002` ab
+(exakt das Muster von `one_active_absence` aus Phase 1) — race-sicher, falls zwei Cron-Aufrufe sich
+zeitlich überlappen, was ein vorheriges `findFirst` nicht garantieren könnte.
+
+**`overdueGraceMinutes` steuert den Versand-Zeitpunkt der Überfälligkeits-Meldung, nicht
+`deriveStatus()`.** Das Setting existierte seit Phase 1 in `AppSettings`, wurde aber nirgends
+gelesen. Abschnitt 3 legt den angezeigten Status ausdrücklich ohne Karenzzeit fest ("ÜBERFAELLIG:
+... `plannedReturnAt < now()`") — die Karenzzeit gilt daher nur für die _Benachrichtigung_
+(`shouldSendOverdueNotice()` in `src/domain/notification-rules.ts`), nicht für den in der UI
+angezeigten Badge.
+
+**Mitarbeiter-Sammelmeldung dedupliziert über ein Stunden-Zeitfenster
+(`hourBucketKey()`), nicht pro Cron-Lauf.** Bei einem alle 5 Minuten laufenden Tick (README.md)
+und weiterhin überfälligen Schülern würde ohne dieses Fenster bis zu zwölfmal pro Stunde dieselbe
+Meldung verschickt. Die `sourceId` der Sammelmeldung ist der ISO-Zeitstempel des Stundenbeginns —
+ändert sich die Anzahl überfälliger Schüler oder beginnt eine neue Stunde, entsteht eine neue,
+separat zählende Meldung.
+
+**`/staff/benachrichtigungen` und `/admin/benachrichtigungen` zusätzlich zu
+`/benachrichtigungen`.** Abschnitt 6 listet nur für Schüler und Admin eine Benachrichtigungs-Route
+explizit; die Mitarbeiter-Sammelmeldung (Abschnitt 8) braucht aber einen Zugriffspunkt für
+Mitarbeiter. Alle drei Seiten teilen sich `src/components/notifications-list.tsx` und
+`PushSubscriptionToggle` — nur der Datenzugriff (`requireRole`, gefiltert auf `userId`) unterscheidet
+sich.
+
+**Web-Push-Versand ist best effort und wirft nie.** `src/lib/push.ts#sendWebPushToUser()` bricht
+ohne konfigurierte VAPID-Keys oder ohne Abonnements früh und lautlos ab (Abschnitt 8: "Kein Fehler,
+wenn Push nicht verfügbar ist") und räumt bei einer `404`/`410`-Antwort des Push-Dienstes
+automatisch die zugehörige `PushSubscription`-Zeile auf (Standard-Interpretation: Abonnement nicht
+mehr gültig), statt sie bei jedem künftigen Tick erneut erfolglos zu versuchen.
+
+**`NEXT_PUBLIC_VAPID_PUBLIC_KEY` statt `VAPID_PUBLIC_KEY`.** Der Browser muss den Public Key kennen,
+um `pushManager.subscribe({ applicationServerKey })` aufzurufen — ohne `NEXT_PUBLIC_`-Präfix bindet
+Next.js eine Variable nicht ins Client-Bundle ein. Unproblematisch, da ein VAPID-Public-Key per
+Definition öffentlich ist (nur `VAPID_PRIVATE_KEY` bleibt serverseitig).
+
+**Kein Custom-Install-Button für iOS, aber verpflichtend die Anleitung.** iOS/Safari feuert kein
+`beforeinstallprompt` — dort zeigt `InstallPromptBanner` daher immer die "Zum Home-Bildschirm"-
+Anleitung (solange die App nicht bereits im Standalone-Modus läuft), während Android/Desktop-Chrome
+den nativen `beforeinstallprompt`-Dialog über einen Button auslöst.

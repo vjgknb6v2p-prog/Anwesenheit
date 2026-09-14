@@ -74,34 +74,41 @@ src/
     (student)/         # Route-Gruppe für Schüler: /, /abwesenheiten, /benachrichtigungen,
                        # /profil + gemeinsames layout.tsx mit <BottomNav/>
     login/, passwort-vergessen/, passwort-zuruecksetzen/[token]/  # öffentlich
+    offline/           # Offline-Fallback (öffentlich, siehe PUBLIC_PATHS)
     staff/              # Mitarbeiter (Top-Nav-Layout): page.tsx (Dashboard),
                        # abwesend/, ueberfaellig/, schueler/, schueler/[id]/, historie/,
-                       # statistiken/ (nur eigener Wohnbereich)
+                       # statistiken/ (nur eigener Wohnbereich), benachrichtigungen/
     admin/             # Admin (Top-Nav-Layout): page.tsx (Live-Übersicht, SSE),
-                       # schueler/, mitarbeiter/, abwesenheiten/, statistiken/, audit/,
-                       # wohnbereiche/, einstellungen/ (benachrichtigungen/ erst Phase 6)
+                       # schueler/, mitarbeiter/, abwesenheiten/, statistiken/,
+                       # benachrichtigungen/, audit/, wohnbereiche/, einstellungen/
     api/auth/[...nextauth]/route.ts
     api/v1/stream/route.ts  # SSE für Admin-Live-Übersicht (serverseitiges DB-Polling)
     api/v1/export/statistiken/route.ts  # CSV-Export der Statistiken
+    api/v1/cron/tick/route.ts  # Erinnerungen/Überfälligkeit/Sammelmeldung (CRON_SECRET)
+    manifest.ts, icon-192.png/route.tsx, icon-512.png/route.tsx  # PWA (next/og ImageResponse)
   actions/             # Server Actions: auth.ts (Login/Logout/Reset), absences.ts
                        # (Aus-/Einchecken/Verlängern), notifications.ts, staff.ts
                        # (Korrektur/Stornierung/Fremd-Einchecken/Verlängerungsfreigabe),
                        # admin-users.ts (anlegen/bearbeiten/aktivieren/löschen/Rolle/
                        # Passwort-Reset), admin-settings.ts (Wohnbereiche/Einstellungen),
-                       # admin-live.ts (Fallback-Poll-Server-Action)
+                       # admin-live.ts (Fallback-Poll-Server-Action), push.ts
+                       # (Web-Push-Abo speichern/entfernen)
   domain/              # Reine Domänenfunktionen — keine I/O: status.ts (deriveStatus),
                        # session.ts, rate-limit.ts, duration.ts, quick-return-times.ts,
                        # absence-reason.ts (feste Gründe als Enum im Code),
                        # live-overview.ts (Filter/Sortierung Admin-Live-Übersicht),
                        # stats.ts (Aggregationen für Statistiken: pro Zeitraum, Ø-Dauer,
-                       # verspätete Rückkehren, häufigste Gründe, Ausgänge pro Schüler)
+                       # verspätete Rückkehren, häufigste Gründe, Ausgänge pro Schüler),
+                       # notification-type.ts, notification-rules.ts (Erinnerungs-/
+                       # Überfälligkeits-/Sammelmeldungs-Regeln für den Cron-Tick)
   lib/                 # Querschnitt: authz.ts (inkl. requireApiRole für Route Handler),
                        # db.ts, password.ts, roles.ts, tokens.ts, audit.ts, logger.ts,
                        # settings.ts, time.ts (Europe/Berlin-Anzeige), staff-queries.ts,
                        # admin-queries.ts (KPI-/Live-Tabellen-Snapshot), stats-queries.ts
                        # (DB-Abfrage + Aggregation für Statistiken), stats-params.ts
-                       # (Zeitraum-/Filter-Parsing aus searchParams), mail/mailer.ts,
-                       # validation/ (Zod-Schemas, u. a. admin.ts)
+                       # (Zeitraum-/Filter-Parsing aus searchParams), push.ts
+                       # (Web-Push-Versand, best effort), mail/mailer.ts,
+                       # validation/ (Zod-Schemas, u. a. admin.ts, push.ts)
   components/
     ui/                # Minimal selbst geschriebene UI-Primitive (Button, Input, Label,
                        # Textarea, Sheet) im shadcn/ui-Stil (components.json vorbereitet,
@@ -111,9 +118,12 @@ src/
                        # live-overview-client.tsx (SSE + Fallback-Polling)
     bottom-nav.tsx, status-badge.tsx, theme-toggle.tsx, check-in-button.tsx,
     cancel-absence-button.tsx, absence-correction-sheet.tsx,
-    extension-decision-buttons.tsx
+    extension-decision-buttons.tsx, notifications-list.tsx (geteilt über alle
+    3 Benachrichtigungsseiten), push-subscription-toggle.tsx,
+    install-prompt-banner.tsx, service-worker-register.tsx
   auth.ts              # Auth.js v5: Credentials-Provider + Prisma/Argon2
-  auth.config.ts       # Edge-taugliche Basis (pages, authorized/jwt/session-Callbacks)
+  auth.config.ts       # Edge-taugliche Basis (pages, authorized/jwt/session-Callbacks,
+                       # PUBLIC_PATHS inkl. PWA-Assets + /api/v1/cron)
   middleware.ts        # nutzt nur auth.config.ts (Edge-Runtime)
 prisma/
   schema.prisma

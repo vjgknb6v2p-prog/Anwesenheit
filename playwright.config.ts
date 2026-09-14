@@ -2,6 +2,17 @@ import { existsSync } from "node:fs";
 import path from "node:path";
 import { defineConfig, devices } from "@playwright/test";
 
+// Next.js lädt .env.local/.env selbst für den (per webServer gestarteten)
+// App-Prozess — der separate Playwright-Testprozess sieht diese Werte aber
+// nicht automatisch. e2e/cron-tick.spec.ts braucht CRON_SECRET, um den
+// Route Handler korrekt zu authentifizieren; Node 20.6+ lädt Dotenv-Dateien
+// nativ, ohne zusätzliche Abhängigkeit.
+for (const file of [".env.local", ".env"]) {
+  if (existsSync(file)) {
+    process.loadEnvFile(file);
+  }
+}
+
 const PORT = 3000;
 const baseURL = `http://localhost:${PORT}`;
 
