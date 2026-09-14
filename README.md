@@ -7,10 +7,10 @@ Verlassen des Geländes am Handy aus und beim Zurückkommen ein; Mitarbeiter und
 Der vollständige Projektauftrag steht in [`PROMPT.md`](./PROMPT.md), die Arbeitsregeln, der Stack
 und die Domänenlogik in [`CLAUDE.md`](./CLAUDE.md).
 
-> **Stand:** Phase 1 (Datenmodell & Auth) — Login/Logout, Passwort-vergessen, RBAC-geschützte
-> Rollenbereiche (`/`, `/staff`, `/admin`) mit vorläufig minimalem Inhalt. Die eigentlichen
-> Fachfunktionen (Aus-/Einchecken, Übersichten, Statistiken, PWA) folgen gemäß Phasenplan in
-> `PROMPT.md`.
+> **Stand:** Phase 2 (Schüler-Flow) — Login/Logout, Passwort-vergessen, vollständiges
+> Schüler-Dashboard (Aus-/Einchecken, Verlängern, Live-Countdown), eigene Historie, Profil,
+> Bottom-Navigation. Mitarbeiter-/Admin-Bereiche (`/staff`, `/admin`) haben weiterhin nur
+> minimalen Inhalt — sie folgen in Phase 3/4 gemäß Phasenplan in `PROMPT.md`.
 
 ## Voraussetzungen
 

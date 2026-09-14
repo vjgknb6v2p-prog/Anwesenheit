@@ -130,3 +130,58 @@ bei dem Host-Header-Spoofing eine Rolle spielen könnte.
 Login-/Passwort-Formulare benötigten Komponenten manuell im shadcn/ui-typischen Stil
 (`class-variance-authority` + `cn()`) angelegt, kompatibel mit der bereits vorhandenen
 `components.json`-Konfiguration.
+
+## Phase 2
+
+**Selbst geschriebenes Bottom-Sheet (`src/components/ui/sheet.tsx`) statt Radix Dialog.** Aus
+demselben Grund wie die übrigen UI-Primitive (`ui.shadcn.com`/Radix-Pakete nicht zuverlässig
+erreichbar) wurde ein minimales, aber vollständiges Modal selbst gebaut: `createPortal` nach
+`document.body`, `role="dialog"`/`aria-modal`, Schließen per Escape-Taste und Backdrop-Klick,
+`env(safe-area-inset-bottom)` für die Innenabstände. Erfüllt die in Abschnitt 7 geforderte
+Bottom-Sheet-UX ohne zusätzliche, in dieser Umgebung nicht sicher installierbare Abhängigkeit.
+
+**Quick-Rückkehr-Chips als eigene, reine Domänenfunktion (`src/domain/quick-return-times.ts`).**
+Die in Abschnitt 7 genannten Beispiel-Chips ("+2 h", "+4 h", "Heute 21:30", "Sonntag 18:00") werden
+nicht hartkodiert, sondern aus `now` und dem Setting `curfewTime` abgeleitet: Der "Heute"-Chip ist
+`curfewTime − 30 min` (bei `curfewTime = "22:00"` ergibt das exakt das im Auftrag genannte
+"21:30") und weicht auf "Morgen" aus, wenn die Zeit für heute schon vorbei ist; "Sonntag 18:00"
+springt entsprechend auf den nächsten Sonntag. Zeitberechnung ausschließlich über UTC-Getter/
+-Setter auf dem von `date-fns-tz#toZonedTime` verschobenen Datum, damit das Ergebnis unabhängig von
+der Systemzeitzone des ausführenden Prozesses korrekt ist (durch Unit-Tests mit fixen Daten
+abgesichert). Die Chips werden clientseitig mit dem tatsächlichen Anzeigezeitpunkt berechnet (nicht
+serverseitig zum Seitenaufruf), damit sie beim Öffnen des Sheets aktuell sind.
+
+**`<input type="datetime-local">` für die freie Zeitwahl wird ohne Zeitzonen-Konvertierung
+geparst.** Der Wert eines `datetime-local`-Feldes hat keine Zeitzoneninformation und wird vom
+Browser als lokale Zeit _des Geräts_ interpretiert — da dieser Wert ausschließlich clientseitig in
+ein `Date` umgewandelt wird (`new Date(value)`), ist das exakt die tatsächliche Absicht des Nutzers
+an seinem eigenen Gerät. Eine explizite Europe/Berlin-Konvertierung ist hier bewusst nicht nötig
+und würde bei falsch eingestellten Geräte-Zeitzonen sogar falsche Werte erzeugen.
+
+**Zwei-Grenzen-Validierung für `plannedReturnAt`/`newReturnAt`.** Abschnitt 3.3 nennt eine feste
+Obergrenze (max. 14 Tage), das Setting `maxPlannedDurationHours` (Default 72 h) ist eine zusätzliche,
+administrativ konfigurierbare (meist engere) Grenze. Die feste 14-Tage-Grenze steckt direkt im
+Zod-Schema (`src/lib/validation/absence.ts`, immer gültig, unabhängig von der DB), die
+Setting-Grenze wird zusätzlich in der Server Action geprüft (dort ist die aktuelle Einstellung
+bekannt) — beide Fehlermeldungen sind eigenständig und verständlich.
+
+**`/benachrichtigungen` bereits in Phase 2, aber bewusst minimal.** Abschnitt 6 verlangt die
+Bottom-Navigation mit 4 Tabs (inkl. "Benachrichtigungen"), Abschnitt 9/Phase 2 nennt
+Benachrichtigungen aber nicht explizit im Aufgabenkatalog — die automatische Erzeugung
+(Erinnerungen, Überfälligkeits-Meldungen) ist erst Phase 6. Die Seite liest echt aus der
+`Notification`-Tabelle (aktuell naturgemäß leer) und kann bereits als gelesen markiert werden; das
+ist kein Platzhalter im verbotenen Sinn, sondern der für diese Phase korrekte, funktionale Umfang.
+
+**Dark-Mode-Toggle mit `localStorage` + Anti-FOUC-Inline-Script.** Wie in der Phase-0-Entscheidung
+angekündigt, folgt der manuelle Toggle jetzt mit `/profil` (`src/components/theme-toggle.tsx`).
+Ein kleines, synchron ausgeführtes Script am Anfang von `<body>` (`src/app/layout.tsx`) liest die
+gespeicherte Präferenz vor dem ersten Paint, um ein kurzes Aufblitzen des falschen Farbschemas zu
+vermeiden. Ohne gespeicherte Präferenz bleibt `prefers-color-scheme` (Phase 0) maßgeblich.
+
+**E2E-Test für "eine aktive Abwesenheit" über zwei Browser-Tabs derselben Sitzung.** Der
+AUSCHECKEN-Button wird im UI ausgeblendet, sobald eine aktive Abwesenheit existiert — ein einfacher
+Klick-Test würde also nie den serverseitigen Schutz (partieller Index `one_active_absence`)
+auslösen. Der Test öffnet stattdessen zwei Tabs mit derselben (Cookie-)Sitzung: Tab A checkt aus,
+Tab B zeigt noch den veralteten ANWESEND-Stand und versucht ebenfalls auszuchecken — das simuliert
+einen echten Wettlauf (zwei Geräte/Reiter) und prüft damit tatsächlich die DB-Konstraint samt
+kontrollierter Fehlerbehandlung, nicht nur das clientseitige Ausblenden des Buttons.

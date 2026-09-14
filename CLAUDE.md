@@ -70,14 +70,26 @@ pnpm db:seed      # prisma db seed -> tsx prisma/seed.ts
 
 ```
 src/
-  app/                 # Next.js App Router: Seiten & Route Handler (/api/v1/*)
-  actions/             # Server Actions (z. B. auth.ts: login/logout/Passwort-Reset)
-  domain/              # Reine Domänenfunktionen (deriveStatus, session, rate-limit, …) — keine I/O
+  app/
+    (student)/         # Route-Gruppe für Schüler: /, /abwesenheiten, /benachrichtigungen,
+                       # /profil + gemeinsames layout.tsx mit <BottomNav/>
+    login/, passwort-vergessen/, passwort-zuruecksetzen/[token]/  # öffentlich
+    staff/, admin/     # minimale Rollen-Landingpages (volle Inhalte: Phase 3/4)
+    api/auth/[...nextauth]/route.ts
+  actions/             # Server Actions: auth.ts (Login/Logout/Reset), absences.ts
+                       # (Aus-/Einchecken/Verlängern), notifications.ts
+  domain/              # Reine Domänenfunktionen — keine I/O: status.ts (deriveStatus),
+                       # session.ts, rate-limit.ts, duration.ts, quick-return-times.ts,
+                       # absence-reason.ts (feste Gründe als Enum im Code)
   lib/                 # Querschnitt: authz.ts, db.ts, password.ts, roles.ts, tokens.ts,
-                       # audit.ts, logger.ts, mail/mailer.ts, validation/
-  components/ui/       # Minimal selbst geschriebene UI-Primitive (Button, Input, Label) im
-                       # shadcn/ui-Stil (components.json vorbereitet, siehe docs/decisions.md)
-  auth.ts              # Auth.js v5: Credentials-Provider + Prisma/Argon2 (Node-Runtime)
+                       # audit.ts, logger.ts, settings.ts, time.ts (Europe/Berlin-Anzeige),
+                       # mail/mailer.ts, validation/ (Zod-Schemas)
+  components/
+    ui/                # Minimal selbst geschriebene UI-Primitive (Button, Input, Label,
+                       # Textarea, Sheet) im shadcn/ui-Stil (components.json vorbereitet,
+                       # siehe docs/decisions.md)
+    bottom-nav.tsx, status-badge.tsx, theme-toggle.tsx
+  auth.ts              # Auth.js v5: Credentials-Provider + Prisma/Argon2
   auth.config.ts       # Edge-taugliche Basis (pages, authorized/jwt/session-Callbacks)
   middleware.ts        # nutzt nur auth.config.ts (Edge-Runtime)
 prisma/
