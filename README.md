@@ -7,11 +7,14 @@ Verlassen des Geländes am Handy aus und beim Zurückkommen ein; Mitarbeiter und
 Der vollständige Projektauftrag steht in [`PROMPT.md`](./PROMPT.md), die Arbeitsregeln, der Stack
 und die Domänenlogik in [`CLAUDE.md`](./CLAUDE.md).
 
-> **Stand:** Phase 3 (Mitarbeiteransicht) — zusätzlich zum Schüler-Flow aus Phase 2 jetzt ein
-> vollständiger Mitarbeiterbereich (`/staff`): Übersicht abwesend/überfällig, Schülerliste +
-> Detailseite, Korrekturen mit Audit-Log, Fremd-Einchecken, Verlängerungsfreigabe. Der
-> Admin-Bereich (`/admin`) hat weiterhin nur minimalen Inhalt — er folgt in Phase 4 gemäß
-> Phasenplan in `PROMPT.md`.
+> **Stand:** Phase 4 (Admin & Live-Übersicht) — der Admin-Bereich (`/admin`) ist jetzt vollständig:
+> Live-Übersicht mit 6 KPI-Karten und Echtzeit-Tabelle (SSE, Aktualisierung ohne Reload innerhalb
+> von 2 Sekunden), Filter/Sortierung, Benutzerverwaltung für Schüler (`/admin/schueler`) und
+> Mitarbeiter (`/admin/mitarbeiter`, inkl. Rolle ändern, Passwort-Reset-Link, Deaktivieren,
+> Soft-Delete), Wohnbereiche (`/admin/wohnbereiche`), Einstellungen (`/admin/einstellungen`) und
+> eine gefilterte Audit-Log-Ansicht (`/admin/audit`). Statistiken (`/admin/statistiken`) und
+> Benachrichtigungen (`/admin/benachrichtigungen`) folgen in Phase 5/6 gemäß Phasenplan in
+> `PROMPT.md`.
 
 ## Voraussetzungen
 

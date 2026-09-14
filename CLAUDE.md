@@ -76,21 +76,32 @@ src/
     login/, passwort-vergessen/, passwort-zuruecksetzen/[token]/  # öffentlich
     staff/              # Mitarbeiter (Top-Nav-Layout): page.tsx (Dashboard),
                        # abwesend/, ueberfaellig/, schueler/, schueler/[id]/, historie/
-    admin/             # minimale Rollen-Landingpage (volle Inhalte: Phase 4)
+    admin/             # Admin (Top-Nav-Layout): page.tsx (Live-Übersicht, SSE),
+                       # schueler/, mitarbeiter/, abwesenheiten/, audit/, wohnbereiche/,
+                       # einstellungen/ (statistiken/, benachrichtigungen/ erst Phase 5/6)
     api/auth/[...nextauth]/route.ts
+    api/v1/stream/route.ts  # SSE für Admin-Live-Übersicht (serverseitiges DB-Polling)
   actions/             # Server Actions: auth.ts (Login/Logout/Reset), absences.ts
                        # (Aus-/Einchecken/Verlängern), notifications.ts, staff.ts
-                       # (Korrektur/Stornierung/Fremd-Einchecken/Verlängerungsfreigabe)
+                       # (Korrektur/Stornierung/Fremd-Einchecken/Verlängerungsfreigabe),
+                       # admin-users.ts (anlegen/bearbeiten/aktivieren/löschen/Rolle/
+                       # Passwort-Reset), admin-settings.ts (Wohnbereiche/Einstellungen),
+                       # admin-live.ts (Fallback-Poll-Server-Action)
   domain/              # Reine Domänenfunktionen — keine I/O: status.ts (deriveStatus),
                        # session.ts, rate-limit.ts, duration.ts, quick-return-times.ts,
-                       # absence-reason.ts (feste Gründe als Enum im Code)
-  lib/                 # Querschnitt: authz.ts, db.ts, password.ts, roles.ts, tokens.ts,
-                       # audit.ts, logger.ts, settings.ts, time.ts (Europe/Berlin-Anzeige),
-                       # staff-queries.ts, mail/mailer.ts, validation/ (Zod-Schemas)
+                       # absence-reason.ts (feste Gründe als Enum im Code),
+                       # live-overview.ts (Filter/Sortierung Admin-Live-Übersicht)
+  lib/                 # Querschnitt: authz.ts (inkl. requireApiRole für Route Handler),
+                       # db.ts, password.ts, roles.ts, tokens.ts, audit.ts, logger.ts,
+                       # settings.ts, time.ts (Europe/Berlin-Anzeige), staff-queries.ts,
+                       # admin-queries.ts (KPI-/Live-Tabellen-Snapshot), mail/mailer.ts,
+                       # validation/ (Zod-Schemas, u. a. admin.ts)
   components/
     ui/                # Minimal selbst geschriebene UI-Primitive (Button, Input, Label,
                        # Textarea, Sheet) im shadcn/ui-Stil (components.json vorbereitet,
                        # siehe docs/decisions.md)
+    admin/             # user-form-sheet.tsx, user-row-actions.tsx, role-select.tsx,
+                       # live-overview-client.tsx (SSE + Fallback-Polling)
     bottom-nav.tsx, status-badge.tsx, theme-toggle.tsx, check-in-button.tsx,
     cancel-absence-button.tsx, absence-correction-sheet.tsx,
     extension-decision-buttons.tsx

@@ -1,30 +1,37 @@
 import type { Metadata } from "next";
-import { logoutAction } from "@/actions/auth";
-import { Button } from "@/components/ui/button";
+import { LiveOverviewClient } from "@/components/admin/live-overview-client";
+import { getLiveOverviewSnapshot } from "@/lib/admin-queries";
 import { requireRole } from "@/lib/authz";
+import { db } from "@/lib/db";
 
 export const metadata: Metadata = {
-  title: "Admin – CheckIn",
+  title: "Live-Übersicht – CheckIn",
 };
 
-export default async function AdminDashboardPage() {
-  const user = await requireRole("ADMIN");
+export default async function AdminLiveOverviewPage() {
+  await requireRole("ADMIN");
+
+  const [snapshot, residentialAreas, schoolClasses] = await Promise.all([
+    getLiveOverviewSnapshot(),
+    db.residentialArea.findMany({
+      select: { name: true },
+      orderBy: { name: "asc" },
+    }),
+    db.user.findMany({
+      where: { role: "STUDENT", deletedAt: null, schoolClass: { not: null } },
+      select: { schoolClass: true },
+      distinct: ["schoolClass"],
+      orderBy: { schoolClass: "asc" },
+    }),
+  ]);
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center gap-6 p-8 text-center">
-      <div>
-        <h1 className="text-2xl font-semibold">Hallo, {user.name}</h1>
-        <p className="text-muted-foreground text-sm">Rolle: Admin</p>
-      </div>
-      <p className="text-muted-foreground max-w-sm text-sm">
-        Die Live-Übersicht mit KPIs und Echtzeit-Tabelle folgt in der nächsten
-        Ausbaustufe.
-      </p>
-      <form action={logoutAction}>
-        <Button type="submit" variant="outline">
-          Abmelden
-        </Button>
-      </form>
-    </main>
+    <LiveOverviewClient
+      initialSnapshot={snapshot}
+      residentialAreaNames={residentialAreas.map((area) => area.name)}
+      schoolClasses={schoolClasses
+        .map((student) => student.schoolClass)
+        .filter((value): value is string => value !== null)}
+    />
   );
 }

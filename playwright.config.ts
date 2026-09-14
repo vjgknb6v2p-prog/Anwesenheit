@@ -33,7 +33,13 @@ export default defineConfig({
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
-  workers: process.env.CI ? 1 : undefined,
+  // Immer 1 Worker: alle Specs teilen sich dieselbe Dev-Datenbank und die
+  // fixen Seed-Nutzer aus PROMPT.md Abschnitt 10 (genau 5 Schüler). Manche
+  // Tests mutieren denselben Nutzer, den ein anderer Test später (wieder)
+  // in einem bestimmten Ausgangszustand erwartet (siehe e2e/admin.spec.ts) —
+  // echte Parallelität würde das ohne Mehrwert für dieses kleine Projekt
+  // gefährden. Siehe docs/decisions.md.
+  workers: 1,
   reporter: "html",
   use: {
     baseURL,

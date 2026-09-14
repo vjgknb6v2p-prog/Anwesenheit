@@ -220,3 +220,71 @@ jetzt gezielt auf den Abschnitt „Aktuelle Abwesenheit" eingegrenzt) sowie eine
 (`finn.r`), der gleichzeitig von `e2e/absences.spec.ts` mutiert wurde. Der Fremd-Einchecken-Test
 nutzt seitdem `mia.h`, der in keiner anderen Testdatei vorkommt; zusätzlich pollt die
 Audit-Log-Abfrage kurz nach, um unter Last robust zu bleiben.
+
+## Phase 4
+
+**SSE über serverseitiges DB-Polling, kein Pub/Sub.** CLAUDE.md schließt Redis explizit aus. Der
+Route Handler `/api/v1/stream` pollt daher selbst alle 1,5 s die Datenbank
+(`getLiveOverviewSnapshot()`) und streamt den vollen Snapshot an jeden verbundenen Client — bei der
+in PROMPT.md beschriebenen Größenordnung (ein Internat, eine Handvoll gleichzeitiger
+Admin-Sessions) unproblematisch. Damit liegt die Aktualisierung deutlich innerhalb der geforderten
+2 Sekunden (Abschnitt 7), ohne zusätzliche Infrastruktur.
+
+**Filter/Sortierung laufen clientseitig auf dem SSE-Snapshot, nicht als Server-Roundtrip.** Reine
+Funktionen dafür stehen in `src/domain/live-overview.ts` (`filterLiveOverviewRows`,
+`sortLiveOverviewRows`) und sind ohne DB unit-testbar. Ein neuer Snapshot vom Server ersetzt nur die
+Rohdaten; Filter/Sortierung wenden sich augenblicklich erneut an, ohne eigene Serveranfrage — das
+hält die Reaktionszeit unabhängig von Netzwerklatenz.
+
+**Live-Updates: SSE + 30-Sekunden-Fallback-Polling per Server Action statt eigenem
+JSON-Endpunkt.** Der Client hält zusätzlich zur `EventSource`-Verbindung ein 30-Sekunden-Intervall,
+das dieselbe Query (`getLiveOverviewSnapshotAction`) über eine Server Action aufruft. Das ist ein
+reines Sicherheitsnetz für den Fall, dass die SSE-Verbindung unbemerkt hängen bleibt (Proxy,
+Firewall) — ein separater, nicht-streamender REST-Endpunkt wäre reine Duplikation derselben
+Abfrage.
+
+**Admin-Nutzer-Verwaltung setzt Passwörter nie direkt, sondern löst denselben
+Reset-Link-Flow wie „Passwort vergessen" aus.** So geht niemals ein Klartext-Passwort durch
+Admin-Hände oder ins Audit-Log; "Passwort zurücksetzen" (Rechte-Matrix) erzeugt lediglich ein
+`PasswordResetToken` und verschickt den Link per `ConsoleMailer`, exakt wie beim
+Nutzer-Self-Service-Flow aus Phase 1.
+
+**Rollenwechsel nur zwischen Mitarbeiter und Admin, nicht für Schüler.** `/admin/schueler` und
+`/admin/mitarbeiter` sind laut Abschnitt 6 getrennte Seiten mit unterschiedlichem Zweck — Schüler
+bleiben immer `STUDENT` (kein Rollen-Dropdown in dieser Liste), während `/admin/mitarbeiter` ein
+Umschalten zwischen `STAFF`/`ADMIN` je Zeile erlaubt. Das deckt den in der Praxis relevanten
+Anwendungsfall ab, ohne eine in Abschnitt 5 nicht näher spezifizierte Rollenmatrix (z. B. Schüler zu
+Mitarbeiter befördern) zu erfinden.
+
+**Admin kann das eigene Konto nicht deaktivieren, löschen oder umrollen.** Eine
+Selbstaussperrung wäre sonst mit einem einzigen Fehlklick möglich und ließe sich ohne
+Datenbankzugriff nicht mehr rückgängig machen — die Server Actions in `src/actions/admin-users.ts`
+lehnen das serverseitig ab (nicht nur UI-seitig ausgeblendet).
+
+**Korrekturen von Abwesenheiten bleiben auf `/staff/schueler/[id]`, keine zweite Korrektur-UI unter
+`/admin`.** Die Rechte-Matrix erlaubt Admins denselben Zugriff wie Mitarbeitern
+(`CORRECT_OR_CANCEL_ABSENCE`, `CHECK_IN_OTHER_STUDENT`); `/admin/abwesenheiten` verlinkt für Details
+und Korrekturen daher auf dieselbe, in Phase 3 gebaute Seite statt eine Kopie zu pflegen. Nur die
+Admin-weite Live-Übersicht (`/admin`) hat eine eigene, SSE-gestützte Tabelle mit eigenem
+„Einchecken"-Button — das ist explizit in Abschnitt 7 gefordert.
+
+**Admin-Navigation verlinkt nur Seiten dieser Phase.** `/admin/statistiken` (Phase 5) und
+`/admin/benachrichtigungen` (Phase 6) fehlen bewusst in `src/app/admin/layout.tsx` — CLAUDE.md
+verbietet Platzhalter-Komponenten im Endstand einer Phase; dasselbe Muster wurde bereits in Phase 3
+für die Mitarbeiter-Navigation angewendet.
+
+**Playwright: `workers: 1` immer, nicht nur in CI.** Alle E2E-Tests teilen sich dieselbe
+Dev-Datenbank und die exakt 5 fixen Seed-Schüler aus Abschnitt 10 — es gibt keine „freien" Schüler
+mehr, die ein neuer Test unabhängig mutieren könnte. Der neue Zwei-Kontexte-Test für die
+Live-Übersicht (`e2e/admin.spec.ts`) nutzt `finn.r`, der bereits von `e2e/absences.spec.ts` benutzt
+wird — mit genau einem Worker laufen alle Tests strikt nacheinander, sodass `finn.r` zu Beginn jedes
+weiteren Tests immer im Zustand ANWESEND ist (Ausgangszustand laut Seed **und** Endzustand nach dem
+Test in `absences.spec.ts`), unabhängig von der Ausführungsreihenfolge der Dateien. Echte
+Parallelität böte für dieses kleine Projekt keinen Laufzeitvorteil, der das Konfliktrisiko
+rechtfertigen würde.
+
+**Audit-Log-Ansicht ohne DB-Relation zu `User`.** `AuditLog.actorId`/`targetUserId` sind laut Schema
+reine String-Felder ohne Fremdschlüssel (bewusst so in Phase 1 angelegt, u. a. damit Log-Einträge
+auch nach einem harten Löschen — Phase 7 — lesbar bleiben). `/admin/audit` löst Namen daher über
+eine einzelne `findMany({ id: { in: [...] } })`-Abfrage aller in der geladenen Seite vorkommenden
+IDs auf, statt pro Zeile einzeln nachzuladen.

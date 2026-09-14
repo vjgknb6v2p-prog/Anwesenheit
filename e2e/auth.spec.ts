@@ -48,7 +48,7 @@ test.describe("Login je Rolle", () => {
     await login(page, "admin@internat.de", "Admin!2026");
     await expect(page).toHaveURL("/admin");
     await expect(
-      page.getByRole("heading", { name: /Hallo, System Administrator/ }),
+      page.getByRole("heading", { name: "Live-Übersicht" }),
     ).toBeVisible();
   });
 

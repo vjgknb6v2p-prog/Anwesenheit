@@ -52,6 +52,25 @@ export async function requireRole(
 }
 
 /**
+ * Variante von `requireRole()` für Route Handler (z. B. `/api/v1/stream`):
+ * `redirect()` erwartet eine Seiten-Render-Pipeline, ein API-/SSE-Endpunkt
+ * braucht stattdessen eine echte HTTP-Antwort. Aufrufer prüfen zuerst auf
+ * `"response"` und geben diese unverändert zurück.
+ */
+export async function requireApiRole(
+  ...roles: Role[]
+): Promise<{ user: AuthenticatedUser } | { response: Response }> {
+  const user = await getSessionUser();
+  if (!user) {
+    return { response: new Response("Unauthorized", { status: 401 }) };
+  }
+  if (!roles.includes(user.role)) {
+    return { response: new Response("Forbidden", { status: 403 }) };
+  }
+  return { user };
+}
+
+/**
  * Die Rechte-Matrix aus PROMPT.md Abschnitt 5. `can()` prüft nur die grobe,
  * rollenbasierte Berechtigung für eine Aktion — eine feinere Einschränkung
  * wie "Mitarbeiter sehen Statistiken nur für den eigenen Wohnbereich" ist
