@@ -75,12 +75,14 @@ src/
                        # /profil + gemeinsames layout.tsx mit <BottomNav/>
     login/, passwort-vergessen/, passwort-zuruecksetzen/[token]/  # öffentlich
     staff/              # Mitarbeiter (Top-Nav-Layout): page.tsx (Dashboard),
-                       # abwesend/, ueberfaellig/, schueler/, schueler/[id]/, historie/
+                       # abwesend/, ueberfaellig/, schueler/, schueler/[id]/, historie/,
+                       # statistiken/ (nur eigener Wohnbereich)
     admin/             # Admin (Top-Nav-Layout): page.tsx (Live-Übersicht, SSE),
-                       # schueler/, mitarbeiter/, abwesenheiten/, audit/, wohnbereiche/,
-                       # einstellungen/ (statistiken/, benachrichtigungen/ erst Phase 5/6)
+                       # schueler/, mitarbeiter/, abwesenheiten/, statistiken/, audit/,
+                       # wohnbereiche/, einstellungen/ (benachrichtigungen/ erst Phase 6)
     api/auth/[...nextauth]/route.ts
     api/v1/stream/route.ts  # SSE für Admin-Live-Übersicht (serverseitiges DB-Polling)
+    api/v1/export/statistiken/route.ts  # CSV-Export der Statistiken
   actions/             # Server Actions: auth.ts (Login/Logout/Reset), absences.ts
                        # (Aus-/Einchecken/Verlängern), notifications.ts, staff.ts
                        # (Korrektur/Stornierung/Fremd-Einchecken/Verlängerungsfreigabe),
@@ -90,16 +92,21 @@ src/
   domain/              # Reine Domänenfunktionen — keine I/O: status.ts (deriveStatus),
                        # session.ts, rate-limit.ts, duration.ts, quick-return-times.ts,
                        # absence-reason.ts (feste Gründe als Enum im Code),
-                       # live-overview.ts (Filter/Sortierung Admin-Live-Übersicht)
+                       # live-overview.ts (Filter/Sortierung Admin-Live-Übersicht),
+                       # stats.ts (Aggregationen für Statistiken: pro Zeitraum, Ø-Dauer,
+                       # verspätete Rückkehren, häufigste Gründe, Ausgänge pro Schüler)
   lib/                 # Querschnitt: authz.ts (inkl. requireApiRole für Route Handler),
                        # db.ts, password.ts, roles.ts, tokens.ts, audit.ts, logger.ts,
                        # settings.ts, time.ts (Europe/Berlin-Anzeige), staff-queries.ts,
-                       # admin-queries.ts (KPI-/Live-Tabellen-Snapshot), mail/mailer.ts,
+                       # admin-queries.ts (KPI-/Live-Tabellen-Snapshot), stats-queries.ts
+                       # (DB-Abfrage + Aggregation für Statistiken), stats-params.ts
+                       # (Zeitraum-/Filter-Parsing aus searchParams), mail/mailer.ts,
                        # validation/ (Zod-Schemas, u. a. admin.ts)
   components/
     ui/                # Minimal selbst geschriebene UI-Primitive (Button, Input, Label,
                        # Textarea, Sheet) im shadcn/ui-Stil (components.json vorbereitet,
                        # siehe docs/decisions.md)
+    stats/             # stats-charts.tsx (Recharts, "use client"), stats-filter-form.tsx
     admin/             # user-form-sheet.tsx, user-row-actions.tsx, role-select.tsx,
                        # live-overview-client.tsx (SSE + Fallback-Polling)
     bottom-nav.tsx, status-badge.tsx, theme-toggle.tsx, check-in-button.tsx,

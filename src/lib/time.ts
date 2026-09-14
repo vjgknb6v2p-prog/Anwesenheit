@@ -20,3 +20,8 @@ export function formatDateTime(date: Date): string {
 export function toDateTimeLocalValue(date: Date): string {
   return formatInTimeZone(date, APP_TIMEZONE, "yyyy-MM-dd'T'HH:mm");
 }
+
+/** Wert für ein `<input type="date">`, z. B. "2026-01-15" (Europe/Berlin-Kalendertag). */
+export function toDateInputValue(date: Date): string {
+  return formatInTimeZone(date, APP_TIMEZONE, "yyyy-MM-dd");
+}

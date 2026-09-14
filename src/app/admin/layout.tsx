@@ -7,6 +7,7 @@ const NAV_ITEMS = [
   { href: "/admin/schueler", label: "Schüler" },
   { href: "/admin/mitarbeiter", label: "Mitarbeiter" },
   { href: "/admin/abwesenheiten", label: "Abwesenheiten" },
+  { href: "/admin/statistiken", label: "Statistiken" },
   { href: "/admin/audit", label: "Audit-Log" },
   { href: "/admin/wohnbereiche", label: "Wohnbereiche" },
   { href: "/admin/einstellungen", label: "Einstellungen" },
@@ -15,10 +16,10 @@ const NAV_ITEMS = [
 /**
  * Admin-Bereich nutzt wie `/staff` eine Top-Navigation (Tablet/Desktop statt
  * Bottom-Tab-Bar). Die Navigation verlinkt bewusst nur Seiten, die in dieser
- * Phase existieren — `/admin/statistiken` (Phase 5) und
- * `/admin/benachrichtigungen` (Phase 6) sind laut PROMPT.md Abschnitt 6 zwar
- * für den Admin-Bereich vorgesehen, aber erst in späteren Phasen dran (siehe
- * docs/decisions.md: keine Platzhalter-Navigationseinträge).
+ * Phase existieren — `/admin/benachrichtigungen` (Phase 6) ist laut
+ * PROMPT.md Abschnitt 6 zwar für den Admin-Bereich vorgesehen, aber erst in
+ * einer späteren Phase dran (siehe docs/decisions.md: keine
+ * Platzhalter-Navigationseinträge).
  */
 export default function AdminLayout({
   children,

@@ -7,14 +7,16 @@ Verlassen des Geländes am Handy aus und beim Zurückkommen ein; Mitarbeiter und
 Der vollständige Projektauftrag steht in [`PROMPT.md`](./PROMPT.md), die Arbeitsregeln, der Stack
 und die Domänenlogik in [`CLAUDE.md`](./CLAUDE.md).
 
-> **Stand:** Phase 4 (Admin & Live-Übersicht) — der Admin-Bereich (`/admin`) ist jetzt vollständig:
-> Live-Übersicht mit 6 KPI-Karten und Echtzeit-Tabelle (SSE, Aktualisierung ohne Reload innerhalb
-> von 2 Sekunden), Filter/Sortierung, Benutzerverwaltung für Schüler (`/admin/schueler`) und
-> Mitarbeiter (`/admin/mitarbeiter`, inkl. Rolle ändern, Passwort-Reset-Link, Deaktivieren,
-> Soft-Delete), Wohnbereiche (`/admin/wohnbereiche`), Einstellungen (`/admin/einstellungen`) und
-> eine gefilterte Audit-Log-Ansicht (`/admin/audit`). Statistiken (`/admin/statistiken`) und
-> Benachrichtigungen (`/admin/benachrichtigungen`) folgen in Phase 5/6 gemäß Phasenplan in
-> `PROMPT.md`.
+> **Stand:** Phase 5 (Statistiken) — `/admin/statistiken` und `/staff/statistiken` (nur eigener
+> Wohnbereich) zeigen Abwesenheiten pro Tag/Woche/Monat, Ø-Dauer, verspätete Rückkehren, häufigste
+> Gründe und Ausgänge pro Schüler als responsive Recharts-Diagramme, mit Zeitraumfilter und
+> CSV-Export. Admin (`/admin`) ist seit Phase 4 vollständig: Live-Übersicht mit 6 KPI-Karten und
+> Echtzeit-Tabelle (SSE, Aktualisierung ohne Reload innerhalb von 2 Sekunden), Filter/Sortierung,
+> Benutzerverwaltung für Schüler (`/admin/schueler`) und Mitarbeiter (`/admin/mitarbeiter`, inkl.
+> Rolle ändern, Passwort-Reset-Link, Deaktivieren, Soft-Delete), Wohnbereiche
+> (`/admin/wohnbereiche`), Einstellungen (`/admin/einstellungen`) und eine gefilterte
+> Audit-Log-Ansicht (`/admin/audit`). Benachrichtigungen (`/admin/benachrichtigungen`) folgen in
+> Phase 6 gemäß Phasenplan in `PROMPT.md`.
 
 ## Voraussetzungen
 

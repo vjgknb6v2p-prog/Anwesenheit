@@ -8,6 +8,7 @@ const NAV_ITEMS = [
   { href: "/staff/ueberfaellig", label: "Überfällig" },
   { href: "/staff/schueler", label: "Schüler" },
   { href: "/staff/historie", label: "Historie" },
+  { href: "/staff/statistiken", label: "Statistiken" },
 ] as const;
 
 /**

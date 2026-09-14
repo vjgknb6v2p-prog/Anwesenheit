@@ -288,3 +288,44 @@ reine String-Felder ohne Fremdschlüssel (bewusst so in Phase 1 angelegt, u. a. 
 auch nach einem harten Löschen — Phase 7 — lesbar bleiben). `/admin/audit` löst Namen daher über
 eine einzelne `findMany({ id: { in: [...] } })`-Abfrage aller in der geladenen Seite vorkommenden
 IDs auf, statt pro Zeile einzeln nachzuladen.
+
+## Phase 5
+
+**`/staff/statistiken` zusätzlich zu `/admin/statistiken`.** Abschnitt 6 listet für Mitarbeiter
+keine eigene Statistik-Route, die Rechte-Matrix (Abschnitt 5) gibt Mitarbeitern aber ausdrücklich
+Zugriff auf Statistiken „nur für den eigenen Wohnbereich". Beide Seiten nutzen dieselbe
+Aggregationslogik (`src/lib/stats-queries.ts#getStatsSummary`); `/staff/statistiken` setzt
+`residentialAreaId` serverseitig hart auf den Wohnbereich des angemeldeten Mitarbeiters (kein
+Filter-UI, kein Zugriff auf fremde Bereiche), `/admin/statistiken` bekommt zusätzlich ein
+Wohnbereichs-Dropdown wie die Live-Übersicht aus Phase 4. Ein Mitarbeiter ohne zugewiesenen
+Wohnbereich sieht einen Hinweistext statt eines Fehlers oder leerer Diagramme ohne Erklärung.
+
+**Stornierte Abwesenheiten fließen in keine Statistik ein.** Sie haben nicht stattgefunden — alle
+Aggregationsfunktionen in `src/domain/stats.ts` filtern `status: "CANCELLED"` intern heraus, bevor
+irgendetwas gezählt wird.
+
+**Ø-Dauer und „verspätete Rückkehren" zählen nur abgeschlossene Abwesenheiten
+(`checkedInAt` gesetzt).** Eine noch laufende (`ACTIVE`, ggf. bereits überfällige) Abwesenheit hat
+keine finale Dauer und ist kein abgeschlossener „verspäteter" Fall — beides würde die Kennzahl
+verzerren, wenn man sie anhand der bisher verstrichenen Zeit mitzählen würde. `totalAbsences`
+(„Abwesenheiten gesamt") zählt dagegen weiterhin alle nicht-stornierten Abwesenheiten im Zeitraum,
+unabhängig vom Abschluss-Status.
+
+**Bucketing für „pro Tag/Woche/Monat" in Europe/Berlin, nicht UTC.** Wie schon bei den
+Quick-Return-Zeiten (Phase 2, `src/domain/quick-return-times.ts`) würde ein Bucketing nach reinem
+UTC-Kalendertag Abwesenheiten, die spätabends in Berlin stattfinden, dem falschen Tag zuordnen.
+`periodStart()` in `src/domain/stats.ts` nutzt denselben UTC-Getter/-Setter-Trick auf dem per
+`toZonedTime` verschobenen Datum; Wochen beginnen montags (ISO).
+
+**Default-Zeitraum: letzte 30 Tage.** Ohne expliziten Zeitraumfilter würden alle ~60 über 90 Tage
+verteilten Seed-Abwesenheiten (Abschnitt 10) auf einmal geladen — 30 Tage zeigen sofort etwas
+Sinnvolles, ohne die Seite standardmäßig mit der kompletten Historie zu überladen
+(`defaultStatsRange()` in `src/lib/stats-queries.ts`).
+
+**CSV-Export als eine Datei mit mehreren Abschnitten, kein zusätzliches Package.** Der Export
+(`/api/v1/export/statistiken`) enthält Zeitraum, die drei Kennzahlen sowie je einen Block für
+„pro Zeitraum", „nach Grund" und „nach Schüler", getrennt durch Leerzeilen, RFC-4180-konform manuell
+escaped. Für dieses überschaubare, feste Format lohnt sich keine zusätzliche CSV-Bibliothek. Für
+Mitarbeiter überschreibt der Route Handler einen mitgegebenen `residentialAreaId`-Parameter
+serverseitig auf den eigenen Wohnbereich — dieselbe Regel wie auf der Seite, nicht nur clientseitig
+ausgeblendet.
