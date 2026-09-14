@@ -56,3 +56,77 @@ Platzhalter aufgeführt, mit Kommentaren, in welcher Phase sie erstmals gebrauch
 `next dev --turbopack` und `next build --turbopack`. Da der Auftrag dazu keine Vorgabe macht und
 Turbopack in Next.js 15.5 der von Next.js empfohlene, produktionsreife Standardweg ist, wurde das
 beibehalten statt auf den klassischen Webpack-Build zurückzuwechseln.
+
+## Phase 1
+
+**Prisma 6.19.3 statt `prisma@latest` (8.0.0-rc.15).** Der `latest`-Dist-Tag der Registry dieser
+Umgebung zeigt auf eine Release-Candidate von Prisma 8, die zudem die Schema-Syntax bricht
+(`datasource.url` direkt im Schema wird nicht mehr unterstützt, stattdessen `prisma.config.ts` +
+Treiber-Adapter nötig). Für ein produktives Projekt wurde stattdessen die letzte reguläre
+Vollversion `6.19.3` gepinnt (klassische, im Schema deklarierte `url = env("DATABASE_URL")`,
+keine Treiber-Adapter-Pflicht) — funktional identisch zur PROMPT.md-Vorgabe „Prisma ORM", ohne
+Beta-Risiko.
+
+**Lokales PostgreSQL (apt-Paket) statt Docker für die Verifikation dieser Session.** Der
+Docker-Daemon lässt sich in dieser Remote-Sandbox nicht starten (siehe Phase-0-Entscheidung).
+Für Migration/Seed/E2E-Tests wurde stattdessen ein lokal installiertes PostgreSQL 16 mit
+identischen Zugangsdaten (`checkin`/`checkin`, Port 5432) wie in `docker-compose.yml` verwendet —
+aus Sicht von Prisma/`DATABASE_URL` nicht unterscheidbar. Auf einer normalen Entwicklungsmaschine
+mit laufendem Docker funktioniert `docker compose up -d` unverändert.
+
+**`pnpm db:push` führt real `prisma migrate deploy` aus.** PROMPT.md Abschnitt 12 nennt wörtlich
+`pnpm db:push` im Setup-Einzeiler; Phase 1 verlangt aber den partiellen Unique-Index
+(`one_active_absence`) als Raw-SQL-Migration. Ein echtes `prisma db push` würde die
+`migrations/`-Historie ignorieren und den Index stillschweigend nicht anlegen. Das Skript heißt
+weiterhin `db:push` (Wortlaut bleibt gültig), ruft intern aber `prisma migrate deploy` auf.
+Zusätzlich `db:migrate` (= `prisma migrate dev`, für neue Migrationen in der Entwicklung) und
+`db:generate` (= `prisma generate`).
+
+**Zusätzliches Modell `PasswordResetToken`.** PROMPT.md Abschnitt 4 vergibt kein Datenmodell für
+den in Abschnitt 8/Phase 1 geforderten Passwort-vergessen-Flow ("Token in DB"). Ergänzt um
+`id, userId, tokenHash, expiresAt, usedAt, createdAt` — der Rohwert des Tokens wird nur per Link
+verschickt, in der DB liegt ausschließlich dessen SHA-256-Hash (`src/lib/tokens.ts`).
+
+**Rate-Limiting über `AuditLog` statt eigenem Zähler-Modell.** Fehlgeschlagene Logins schreiben
+einen `AuditLog`-Eintrag (`action: "LOGIN_FAILED"`, `metadata: {email}`, `ip`); die Prüfung
+(`src/lib/audit.ts#isLoginRateLimited`) zählt solche Einträge der letzten 15 Minuten für E-Mail
+oder IP über die reine, unit-getestete Funktion `isRateLimited` aus `src/domain/rate-limit.ts`.
+Kein Redis, kein separates Zähler-Modell — passt zum vorgegebenen Stack und zur ohnehin
+geforderten Audit-Protokollierung.
+
+**Idle-/Absolut-Timeout im `jwt`-Callback, nicht im `session`-Callback.** Auth.js' `jwt`-Callback
+ist laut Typdefinition offiziell dafür vorgesehen, `null` zurückzugeben, um eine Session zu
+invalidieren (`Awaitable<JWT | null>`); der `session`-Callback erlaubt das typseitig nicht
+(`Awaitable<Session | DefaultSession>`). Die eigentliche Zeitprüfung steckt in der reinen,
+unit-getesteten Funktion `isSessionExpired()` (`src/domain/session.ts`); der Callback selbst
+pflegt nur rollierende `loginAt`/`lastActiveAt`-Zeitstempel im Token. Ein Live-E2E-Test über eine
+echte Stunde Inaktivität ist nicht praktikabel und wurde nicht versucht.
+
+**JWT-Zusatzfelder (`role`, `loginAt`, `lastActiveAt`) per lokalem Intersection-Type statt
+globaler Typ-Augmentation.** `declare module "next-auth/jwt" { interface JWT {...} }`
+(offiziell dokumentiertes Muster) greift bei dieser next-auth-Version nicht: `next-auth/jwt`
+re-exportiert `JWT` per `export * from "@auth/core/jwt"`, und TypeScript merged
+Interface-Deklarationen über einen Wildcard-Re-Export nicht in den Originaltyp (verifiziert durch
+`tsc`-Fehler: `token.role` blieb `unknown`). Die `Session`/`User`-Augmentation über
+`declare module "next-auth"` funktioniert dagegen, da `next-auth` diese Typen per benanntem
+`export type { Session, User, ... }` re-exportiert. Betroffene JWT-Felder werden daher in
+`src/auth.config.ts` lokal per `token as typeof token & Partial<SessionMeta>` behandelt.
+
+**Middleware bleibt auf der Edge-Runtime, kein Prisma/pino im `jwt`/`session`-Callback von
+`auth.config.ts`.** Ein Versuch, `middleware.ts` testweise per `export const config = { runtime:
+"nodejs" }` auf die Node.js-Runtime umzustellen, führte in dieser Next.js-Version dazu, dass die
+Middleware beim Build komplett aus dem Manifest verschwand (vermutlich hinter einem nicht
+aktivierten Experimental-Flag). Da `auth.config.ts` (Provider-lose Basis-Konfiguration, von
+`middleware.ts` **und** `auth.ts` verwendet) dadurch Edge-tauglich bleiben muss, verzichtet der
+`jwt`-Callback dort bewusst auf den pino-Logger (Node-only) für die Session-Timeout-Diagnose.
+
+**`trustHost: true` für Auth.js.** Ohne festes `AUTH_URL` (Selbst-Hosting per docker-compose ohne
+bekannte externe URL zur Build-/Startzeit) meldet Auth.js sonst `UntrustedHost` für jede Anfrage.
+Unkritisch, da ausschließlich der Credentials-Provider verwendet wird — kein OAuth-Redirect-Flow,
+bei dem Host-Header-Spoofing eine Rolle spielen könnte.
+
+**Minimale UI-Primitive (`Button`, `Input`, `Label`) selbst geschrieben statt per
+`shadcn add`.** Aus demselben Grund wie in Phase 0 (`ui.shadcn.com` blockiert) wurden die für die
+Login-/Passwort-Formulare benötigten Komponenten manuell im shadcn/ui-typischen Stil
+(`class-variance-authority` + `cn()`) angelegt, kompatibel mit der bereits vorhandenen
+`components.json`-Konfiguration.

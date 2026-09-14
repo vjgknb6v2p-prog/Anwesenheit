@@ -7,8 +7,10 @@ Verlassen des Geländes am Handy aus und beim Zurückkommen ein; Mitarbeiter und
 Der vollständige Projektauftrag steht in [`PROMPT.md`](./PROMPT.md), die Arbeitsregeln, der Stack
 und die Domänenlogik in [`CLAUDE.md`](./CLAUDE.md).
 
-> **Stand:** Phase 0 (Fundament) — Projekt-Grundgerüst, noch ohne Datenbankanbindung, Login oder
-> Fachfunktionalität. Weitere Phasen folgen gemäß Phasenplan in `PROMPT.md`.
+> **Stand:** Phase 1 (Datenmodell & Auth) — Login/Logout, Passwort-vergessen, RBAC-geschützte
+> Rollenbereiche (`/`, `/staff`, `/admin`) mit vorläufig minimalem Inhalt. Die eigentlichen
+> Fachfunktionen (Aus-/Einchecken, Übersichten, Statistiken, PWA) folgen gemäß Phasenplan in
+> `PROMPT.md`.
 
 ## Voraussetzungen
 
@@ -21,11 +23,21 @@ und die Domänenlogik in [`CLAUDE.md`](./CLAUDE.md).
 ```bash
 docker compose up -d
 pnpm install
-cp .env.example .env.local
+cp .env.example .env.local   # AUTH_SECRET generieren: pnpm dlx auth secret
+pnpm db:push
+pnpm db:seed
 pnpm dev
 ```
 
 Die App läuft danach unter <http://localhost:3000>.
+
+### Demo-Zugangsdaten (aus `prisma/seed.ts`)
+
+| Rolle       | E-Mail                                                                                                       | Passwort        |
+| ----------- | ------------------------------------------------------------------------------------------------------------ | --------------- |
+| Admin       | `admin@internat.de`                                                                                          | `Admin!2026`    |
+| Mitarbeiter | `k.weber@internat.de`, `m.schulz@internat.de`                                                                | `Staff!2026`    |
+| Schüler     | `lena.b@internat.de`, `jonas.k@internat.de`, `mia.h@internat.de`, `finn.r@internat.de`, `sara.l@internat.de` | `Schueler!2026` |
 
 ## Befehle
 
@@ -40,10 +52,20 @@ Die App läuft danach unter <http://localhost:3000>.
 | `pnpm test`                         | Vitest (Unit-/Domänentests)           |
 | `pnpm test:e2e`                     | Playwright (E2E)                      |
 
+Zusätzlich (ab Phase 1, Prisma):
+
+| Befehl             | Zweck                                                     |
+| ------------------ | --------------------------------------------------------- |
+| `pnpm db:generate` | Prisma Client generieren                                  |
+| `pnpm db:migrate`  | Neue Migration erstellen (Entwicklung)                    |
+| `pnpm db:push`     | Bestehende Migrationen anwenden (`prisma migrate deploy`) |
+| `pnpm db:seed`     | `prisma/seed.ts` ausführen                                |
+
 ## Umgebungsvariablen
 
 Siehe [`.env.example`](./.env.example) für alle Variablen und Kommentare, ab welcher Phase sie
-benötigt werden (Datenbank, Auth.js, Web-Push/VAPID, SMTP, Cron-Secret).
+benötigt werden (Datenbank, Auth.js, Web-Push/VAPID, SMTP, Cron-Secret). `AUTH_SECRET` sollte
+lokal per `pnpm dlx auth secret` erzeugt werden.
 
 ## Weiterführende Dokumente
 

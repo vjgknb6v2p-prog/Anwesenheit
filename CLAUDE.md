@@ -57,11 +57,13 @@ pnpm test:watch            # Vitest im Watch-Modus
 pnpm test:e2e              # Playwright E2E-Tests
 ```
 
-Ab Phase 1 zusätzlich (Prisma):
+Seit Phase 1 zusätzlich (Prisma, Version `6.19.3` gepinnt — siehe `docs/decisions.md`):
 
 ```bash
-pnpm db:push    # Schema ohne Migration anwenden (Entwicklung)
-pnpm db:seed    # prisma/seed.ts ausführen
+pnpm db:generate  # prisma generate
+pnpm db:migrate   # prisma migrate dev (neue Migration in der Entwicklung erstellen)
+pnpm db:push      # prisma migrate deploy (bestehende Migrationen anwenden, inkl. Raw-SQL)
+pnpm db:seed      # prisma db seed -> tsx prisma/seed.ts
 ```
 
 ## Ordnerstruktur
@@ -69,10 +71,15 @@ pnpm db:seed    # prisma/seed.ts ausführen
 ```
 src/
   app/                 # Next.js App Router: Seiten & Route Handler (/api/v1/*)
-  domain/              # Reine Domänenfunktionen (z. B. deriveStatus, stats) — keine I/O
-  lib/                 # Querschnitt: authz.ts, db-Client, Zeit-Helper, Logger, Mailer-Interface
-  components/          # UI-Komponenten
-    ui/                # shadcn/ui-Basiskomponenten
+  actions/             # Server Actions (z. B. auth.ts: login/logout/Passwort-Reset)
+  domain/              # Reine Domänenfunktionen (deriveStatus, session, rate-limit, …) — keine I/O
+  lib/                 # Querschnitt: authz.ts, db.ts, password.ts, roles.ts, tokens.ts,
+                       # audit.ts, logger.ts, mail/mailer.ts, validation/
+  components/ui/       # Minimal selbst geschriebene UI-Primitive (Button, Input, Label) im
+                       # shadcn/ui-Stil (components.json vorbereitet, siehe docs/decisions.md)
+  auth.ts              # Auth.js v5: Credentials-Provider + Prisma/Argon2 (Node-Runtime)
+  auth.config.ts       # Edge-taugliche Basis (pages, authorized/jwt/session-Callbacks)
+  middleware.ts        # nutzt nur auth.config.ts (Edge-Runtime)
 prisma/
   schema.prisma
   seed.ts              # einzige Quelle für Testdaten

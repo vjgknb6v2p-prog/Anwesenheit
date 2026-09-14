@@ -1,0 +1,186 @@
+// Prisma-Schema — siehe PROMPT.md Abschnitt 4 für die verbindliche Vorgabe.
+// DB-Spalten-/Tabellennamen sind snake_case (@map/@@map), damit die in
+// PROMPT.md Abschnitt 3.2 vorgegebene Raw-SQL-Migration
+// (`CREATE UNIQUE INDEX one_active_absence ON absences (user_id) …`)
+// exakt zu den erzeugten Tabellen passt.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  STUDENT
+  STAFF
+  ADMIN
+
+  @@map("role")
+}
+
+enum AbsenceStatus {
+  ACTIVE
+  COMPLETED
+  CANCELLED
+
+  @@map("absence_status")
+}
+
+enum ExtensionStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  AUTO_APPROVED
+
+  @@map("extension_status")
+}
+
+model User {
+  id                 String    @id @default(cuid())
+  firstName          String    @map("first_name")
+  lastName           String    @map("last_name")
+  email              String    @unique
+  passwordHash       String    @map("password_hash")
+  role               Role      @default(STUDENT)
+  schoolClass        String?   @map("school_class")
+  room               String?
+  residentialArea    ResidentialArea? @relation(fields: [residentialAreaId], references: [id])
+  residentialAreaId  String?   @map("residential_area_id")
+  avatarUrl          String?   @map("avatar_url")
+  active             Boolean   @default(true)
+  mustChangePassword Boolean   @default(false) @map("must_change_password")
+  lastLoginAt        DateTime? @map("last_login_at")
+  createdAt          DateTime  @default(now()) @map("created_at")
+  updatedAt          DateTime  @updatedAt @map("updated_at")
+  deletedAt          DateTime? @map("deleted_at")
+
+  absences            Absence[]
+  notifications       Notification[]
+  pushSubscriptions   PushSubscription[]
+  passwordResetTokens PasswordResetToken[]
+
+  @@index([residentialAreaId])
+  @@map("users")
+}
+
+model ResidentialArea {
+  id    String @id @default(cuid())
+  name  String @unique
+  users User[]
+
+  @@map("residential_areas")
+}
+
+model Absence {
+  id              String        @id @default(cuid())
+  user            User          @relation(fields: [userId], references: [id])
+  userId          String        @map("user_id")
+  checkedOutAt    DateTime      @map("checked_out_at")
+  plannedReturnAt DateTime      @map("planned_return_at")
+  checkedInAt     DateTime?     @map("checked_in_at")
+  reason          String
+  reasonDetail    String?       @map("reason_detail")
+  destination     String
+  note            String?
+  status          AbsenceStatus @default(ACTIVE)
+  checkedInById   String?       @map("checked_in_by_id")
+  createdAt       DateTime      @default(now()) @map("created_at")
+  updatedAt       DateTime      @updatedAt @map("updated_at")
+
+  extensions Extension[]
+
+  // Der partielle Unique-Index "one_active_absence" (max. eine ACTIVE
+  // Absence pro Schüler) lässt sich in Prisma's Schema-DSL nicht deklarieren
+  // (kein WHERE-Filter auf @@unique) und wird stattdessen per Raw-SQL in
+  // prisma/migrations/…/migration.sql erzwungen. Siehe docs/decisions.md.
+  @@index([userId, status])
+  @@index([status, plannedReturnAt])
+  @@map("absences")
+}
+
+model Extension {
+  id           String          @id @default(cuid())
+  absence      Absence         @relation(fields: [absenceId], references: [id], onDelete: Cascade)
+  absenceId    String          @map("absence_id")
+  oldReturnAt  DateTime        @map("old_return_at")
+  newReturnAt  DateTime        @map("new_return_at")
+  reason       String?
+  status       ExtensionStatus @default(AUTO_APPROVED)
+  approvedById String?         @map("approved_by_id")
+  decidedAt    DateTime?       @map("decided_at")
+  createdAt    DateTime        @default(now()) @map("created_at")
+
+  @@index([absenceId])
+  @@map("extensions")
+}
+
+model Notification {
+  id        String    @id @default(cuid())
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String    @map("user_id")
+  type      String
+  title     String
+  message   String
+  readAt    DateTime? @map("read_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  @@index([userId, readAt])
+  @@map("notifications")
+}
+
+model PushSubscription {
+  id        String   @id @default(cuid())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String   @map("user_id")
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  userAgent String?  @map("user_agent")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([userId])
+  @@map("push_subscriptions")
+}
+
+model AuditLog {
+  id           String   @id @default(cuid())
+  actorId      String?  @map("actor_id")
+  action       String
+  targetUserId String?  @map("target_user_id")
+  targetType   String?  @map("target_type")
+  targetId     String?  @map("target_id")
+  metadata     Json?
+  ip           String?
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  @@index([createdAt])
+  @@index([targetUserId])
+  @@index([action, createdAt])
+  @@map("audit_logs")
+}
+
+model Setting {
+  key   String @id
+  value Json
+
+  @@map("settings")
+}
+
+/// Nicht Teil des in PROMPT.md Abschnitt 4 vorgegebenen Schemas, aber für den
+/// dort in Abschnitt 8/Phase 1 geforderten Passwort-vergessen-Flow (Token in
+/// DB) notwendig. Siehe docs/decisions.md.
+model PasswordResetToken {
+  id         String    @id @default(cuid())
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId     String    @map("user_id")
+  tokenHash  String    @unique @map("token_hash")
+  expiresAt  DateTime  @map("expires_at")
+  usedAt     DateTime? @map("used_at")
+  createdAt  DateTime  @default(now()) @map("created_at")
+
+  @@index([userId])
+  @@map("password_reset_tokens")
+}
