@@ -12,6 +12,9 @@ export interface AppSettings {
   overdueGraceMinutes: number;
   maxPlannedDurationHours: number;
   curfewTime: string;
+  /** PROMPT.md Abschnitt 9 (Phase 7): Aufbewahrungsfrist für den
+   * Hard-Delete-Job (/api/v1/cron/cleanup), Default 12 Monate. */
+  dataRetentionMonths: number;
 }
 
 const DEFAULT_SETTINGS: AppSettings = {
@@ -20,6 +23,7 @@ const DEFAULT_SETTINGS: AppSettings = {
   overdueGraceMinutes: 10,
   maxPlannedDurationHours: 72,
   curfewTime: "22:00",
+  dataRetentionMonths: 12,
 };
 
 export async function getSettings(): Promise<AppSettings> {

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { logoutAction } from "@/actions/auth";
+import { DataExportLinks } from "@/components/data-export-links";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
 import { requireRole } from "@/lib/authz";
@@ -44,6 +45,8 @@ export default async function ProfilePage() {
         <p className="text-sm font-medium">Darstellung</p>
         <ThemeToggle />
       </div>
+
+      <DataExportLinks />
 
       <form action={logoutAction}>
         <Button type="submit" variant="outline" className="w-full">

@@ -84,7 +84,9 @@ src/
     api/auth/[...nextauth]/route.ts
     api/v1/stream/route.ts  # SSE für Admin-Live-Übersicht (serverseitiges DB-Polling)
     api/v1/export/statistiken/route.ts  # CSV-Export der Statistiken
+    api/v1/export/eigene-daten/route.ts  # Eigene-Daten-Export (JSON/CSV, alle Rollen)
     api/v1/cron/tick/route.ts  # Erinnerungen/Überfälligkeit/Sammelmeldung (CRON_SECRET)
+    api/v1/cron/cleanup/route.ts  # Hard-Delete-Job (Aufbewahrungsfrist, CRON_SECRET)
     manifest.ts, icon-192.png/route.tsx, icon-512.png/route.tsx  # PWA (next/og ImageResponse)
   actions/             # Server Actions: auth.ts (Login/Logout/Reset), absences.ts
                        # (Aus-/Einchecken/Verlängern), notifications.ts, staff.ts
@@ -100,15 +102,17 @@ src/
                        # stats.ts (Aggregationen für Statistiken: pro Zeitraum, Ø-Dauer,
                        # verspätete Rückkehren, häufigste Gründe, Ausgänge pro Schüler),
                        # notification-type.ts, notification-rules.ts (Erinnerungs-/
-                       # Überfälligkeits-/Sammelmeldungs-Regeln für den Cron-Tick)
+                       # Überfälligkeits-/Sammelmeldungs-Regeln für den Cron-Tick),
+                       # retention.ts (Hard-Delete-Kandidaten-Regel)
   lib/                 # Querschnitt: authz.ts (inkl. requireApiRole für Route Handler),
                        # db.ts, password.ts, roles.ts, tokens.ts, audit.ts, logger.ts,
-                       # settings.ts, time.ts (Europe/Berlin-Anzeige), staff-queries.ts,
-                       # admin-queries.ts (KPI-/Live-Tabellen-Snapshot), stats-queries.ts
-                       # (DB-Abfrage + Aggregation für Statistiken), stats-params.ts
-                       # (Zeitraum-/Filter-Parsing aus searchParams), push.ts
-                       # (Web-Push-Versand, best effort), mail/mailer.ts,
-                       # validation/ (Zod-Schemas, u. a. admin.ts, push.ts)
+                       # settings.ts (inkl. dataRetentionMonths), time.ts
+                       # (Europe/Berlin-Anzeige), staff-queries.ts, admin-queries.ts
+                       # (KPI-/Live-Tabellen-Snapshot), stats-queries.ts (DB-Abfrage +
+                       # Aggregation für Statistiken), stats-params.ts (Zeitraum-/
+                       # Filter-Parsing aus searchParams), push.ts (Web-Push-Versand,
+                       # best effort), mail/mailer.ts, validation/ (Zod-Schemas,
+                       # u. a. admin.ts, push.ts)
   components/
     ui/                # Minimal selbst geschriebene UI-Primitive (Button, Input, Label,
                        # Textarea, Sheet) im shadcn/ui-Stil (components.json vorbereitet,
@@ -120,7 +124,9 @@ src/
     cancel-absence-button.tsx, absence-correction-sheet.tsx,
     extension-decision-buttons.tsx, notifications-list.tsx (geteilt über alle
     3 Benachrichtigungsseiten), push-subscription-toggle.tsx,
-    install-prompt-banner.tsx, service-worker-register.tsx
+    install-prompt-banner.tsx, service-worker-register.tsx,
+    data-export-links.tsx (Eigene-Daten-Export, alle Rollen)
+next.config.ts         # Security-Header (CSP, HSTS, X-Frame-Options, …)
   auth.ts              # Auth.js v5: Credentials-Provider + Prisma/Argon2
   auth.config.ts       # Edge-taugliche Basis (pages, authorized/jwt/session-Callbacks,
                        # PUBLIC_PATHS inkl. PWA-Assets + /api/v1/cron)

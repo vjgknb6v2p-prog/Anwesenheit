@@ -59,5 +59,6 @@ export const settingsSchema = z.object({
   curfewTime: z
     .string()
     .regex(/^([01]\d|2[0-3]):[0-5]\d$/, "Format HH:MM, z. B. 22:00."),
+  dataRetentionMonths: z.coerce.number().int().min(1).max(120),
 });
 export type SettingsInput = z.infer<typeof settingsSchema>;

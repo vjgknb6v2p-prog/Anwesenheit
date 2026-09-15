@@ -7,16 +7,19 @@ Verlassen des Geländes am Handy aus und beim Zurückkommen ein; Mitarbeiter und
 Der vollständige Projektauftrag steht in [`PROMPT.md`](./PROMPT.md), die Arbeitsregeln, der Stack
 und die Domänenlogik in [`CLAUDE.md`](./CLAUDE.md).
 
-> **Stand:** Phase 6 (PWA & Benachrichtigungen) — CheckIn ist als PWA installierbar (Manifest,
-> Service Worker, Offline-Fallback, Install-Hinweis inkl. iOS-Anleitung), In-App-Benachrichtigungen
-> mit Glocke+Badge existieren für alle drei Rollen (`/benachrichtigungen`,
-> `/staff/benachrichtigungen`, `/admin/benachrichtigungen`), dazu optionales Web Push (VAPID) und
-> ein idempotenter Cron-Tick (`/api/v1/cron/tick`) für Erinnerungen, Überfälligkeits-Meldungen und
-> die Mitarbeiter-Sammelmeldung — Einrichtung siehe [Cron-Tick](#cron-tick-erinnerungen--sammelmeldung)
-> unten. Statistiken (Phase 5) unter `/admin/statistiken`/`/staff/statistiken`. Admin (`/admin`) ist
-> seit Phase 4 vollständig: Live-Übersicht mit 6 KPI-Karten und Echtzeit-Tabelle (SSE), Filter/
-> Sortierung, Benutzerverwaltung (`/admin/schueler`, `/admin/mitarbeiter`), Wohnbereiche,
-> Einstellungen, Audit-Log. Phase 7 (Datenschutz & Härtung) folgt gemäß Phasenplan in `PROMPT.md`.
+> **Stand:** Phase 7 (Datenschutz & Härtung) — eigene Daten als JSON/CSV exportierbar
+> (`/api/v1/export/eigene-daten`, Link auf `/profil` bzw. den Benachrichtigungsseiten), Löschkonzept
+> aus Soft-Delete (Benutzer) und automatischem Hard-Delete alter Abwesenheiten
+> (`/api/v1/cron/cleanup`, Frist über das Setting „Aufbewahrungsfrist" einstellbar), Security-Header
+> (CSP, HSTS, X-Frame-Options u. a., siehe `next.config.ts`), vollständiges Audit-Log für
+> sicherheits-/verwaltungsrelevante Aktionen und `docs/datenschutz.md` mit einem
+> Verarbeitungsverzeichnis-Entwurf. Eine rollenübergreifende E2E-Testmatrix
+> (`e2e/rbac-matrix.spec.ts`) verifiziert die Rechte-Matrix für jede Seite und jede Rolle. Davor:
+> PWA & Benachrichtigungen (Phase 6, Manifest/Service Worker/Offline-Fallback, Web Push, Cron-Tick
+> für Erinnerungen — siehe [Cron-Tick](#cron-tick-erinnerungen--sammelmeldung) unten), Statistiken
+> (Phase 5) sowie ein seit Phase 4 vollständiger Admin-Bereich (Live-Übersicht, Benutzerverwaltung,
+> Wohnbereiche, Einstellungen, Audit-Log). Phase 8 (Abschluss) folgt gemäß Phasenplan in
+> `PROMPT.md`.
 
 ## Voraussetzungen
 
@@ -131,6 +134,24 @@ WantedBy=timers.target
 `/etc/checkin/cron.env` enthält `CRON_SECRET=<derselbe Wert wie in .env.local>`. Aktivieren mit
 `systemctl enable --now checkin-cron.timer`.
 
+## Cron-Cleanup (Aufbewahrungsfrist)
+
+`/api/v1/cron/cleanup` löscht abgeschlossene/stornierte Abwesenheiten endgültig, sobald sie älter
+als das Setting „Aufbewahrungsfrist" (`/admin/einstellungen`, Default 12 Monate) sind — aktive
+Abwesenheiten werden nie gelöscht. Ebenfalls per `x-cron-secret`-Header geschützt und idempotent
+(mehrfaches Aufrufen am selben Tag löscht nur die zu diesem Zeitpunkt tatsächlich fälligen
+Datensätze). Anders als der Cron-Tick reicht hier ein täglicher Rhythmus:
+
+```bash
+curl -H "x-cron-secret: $CRON_SECRET" https://<domain>/api/v1/cron/cleanup
+```
+
+Für Vercel Cron einen weiteren Eintrag in `vercel.json` ergänzen
+(`{ "path": "/api/v1/cron/cleanup", "schedule": "0 3 * * *" }`, täglich um 3 Uhr) bzw. für den
+systemd-Timer oben eine zweite Service-/Timer-Datei mit `OnCalendar=03:00` und dem entsprechenden
+Endpunkt anlegen.
+
 ## Weiterführende Dokumente
 
 - [`docs/decisions.md`](./docs/decisions.md) — Designentscheidungen, die der Auftrag offenlässt.
+- [`docs/datenschutz.md`](./docs/datenschutz.md) — Verarbeitungsverzeichnis-Entwurf (Phase 7).

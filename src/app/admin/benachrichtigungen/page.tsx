@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { DataExportLinks } from "@/components/data-export-links";
 import { NotificationsList } from "@/components/notifications-list";
 import { PushSubscriptionToggle } from "@/components/push-subscription-toggle";
 import { requireRole } from "@/lib/authz";
@@ -32,6 +33,7 @@ export default async function AdminNotificationsPage() {
       </div>
 
       <PushSubscriptionToggle />
+      <DataExportLinks />
 
       <NotificationsList notifications={notifications} />
     </div>

@@ -127,6 +127,7 @@ async function main() {
       { key: "overdueGraceMinutes", value: 10 },
       { key: "maxPlannedDurationHours", value: 72 },
       { key: "curfewTime", value: "22:00" },
+      { key: "dataRetentionMonths", value: 12 },
     ],
   });
 
@@ -233,7 +234,7 @@ async function main() {
   await db.absence.create({
     data: {
       userId: onTimeStudent.id,
-      checkedOutAt: atHour(0, 14, 0),
+      checkedOutAt: new Date(Date.now() - 5 * 60 * 60 * 1000),
       plannedReturnAt: new Date(Date.now() + 3 * 60 * 60 * 1000),
       reason: "EINKAUF_STADT",
       destination: DESTINATIONS_BY_REASON.EINKAUF_STADT,

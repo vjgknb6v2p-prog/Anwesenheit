@@ -23,6 +23,9 @@ export function SettingsClient({ settings }: { settings: AppSettings }) {
     String(settings.maxPlannedDurationHours),
   );
   const [curfewTime, setCurfewTime] = useState(settings.curfewTime);
+  const [dataRetentionMonths, setDataRetentionMonths] = useState(
+    String(settings.dataRetentionMonths),
+  );
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
@@ -38,6 +41,7 @@ export function SettingsClient({ settings }: { settings: AppSettings }) {
       overdueGraceMinutes,
       maxPlannedDurationHours,
       curfewTime,
+      dataRetentionMonths,
     });
     setSubmitting(false);
     if (result.error) {
@@ -119,6 +123,25 @@ export function SettingsClient({ settings }: { settings: AppSettings }) {
             onChange={(event) => setCurfewTime(event.target.value)}
             required
           />
+        </div>
+
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor="data-retention">
+            Aufbewahrungsfrist für Abwesenheiten (Monate)
+          </Label>
+          <Input
+            id="data-retention"
+            type="number"
+            min={1}
+            value={dataRetentionMonths}
+            onChange={(event) => setDataRetentionMonths(event.target.value)}
+            required
+          />
+          <p className="text-muted-foreground text-xs">
+            Abgeschlossene/stornierte Abwesenheiten, die älter sind, werden vom
+            Hard-Delete-Job (<code>/api/v1/cron/cleanup</code>) endgültig
+            gelöscht.
+          </p>
         </div>
 
         {error && (

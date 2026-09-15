@@ -402,3 +402,88 @@ Definition öffentlich ist (nur `VAPID_PRIVATE_KEY` bleibt serverseitig).
 `beforeinstallprompt` — dort zeigt `InstallPromptBanner` daher immer die "Zum Home-Bildschirm"-
 Anleitung (solange die App nicht bereits im Standalone-Modus läuft), während Android/Desktop-Chrome
 den nativen `beforeinstallprompt`-Dialog über einen Button auslöst.
+
+## Phase 7
+
+**Hard-Delete-Job als eigener Endpunkt `/api/v1/cron/cleanup`, getrennt von `/api/v1/cron/tick`.**
+Beide sind Cron-getriebene Route Handler mit `CRON_SECRET`, aber unterschiedliche Aufgabe und
+sinnvolle Frequenz — Erinnerungen/Überfälligkeit alle 5 Minuten (Phase 6), die Aufbewahrungsfrist-
+Bereinigung reicht täglich (siehe README.md). Ein gemeinsamer Endpunkt mit Modus-Parameter hätte
+keinen Vorteil geboten, aber die einzelne Verantwortlichkeit verwischt.
+
+**`overdueGraceMinutes` bleibt unangetastet, `dataRetentionMonths` ist das neue, siebte Setting.**
+Reine Ergänzung von `AppSettings`/`Setting`-Tabelle nach demselben Muster wie die bestehenden
+Felder — Default 12 Monate exakt nach PROMPT.md Abschnitt 9. Die Prüfung, ob eine Abwesenheit
+löschreif ist, sitzt als reine Funktion in `src/domain/retention.ts`
+(`isEligibleForHardDelete`) und schließt `ACTIVE`-Abwesenheiten kategorisch aus — unabhängig vom
+Alter von `checkedOutAt` darf eine noch nicht abgeschlossene Abwesenheit nie gelöscht werden.
+
+**Hard-Delete löscht `Absence`-Zeilen tatsächlich, keine Anonymisierung.** PROMPT.md Abschnitt 9
+verlangt einen "Hard-Delete-Job" (nicht "Anonymisierungs-Job"). `Extension`-Datensätze kaskadieren
+automatisch (`onDelete: Cascade`, bereits seit Phase 1 im Schema); `AuditLog`-Einträge, die die
+gelöschte Absence als `targetId` referenzieren, bleiben unverändert erhalten (kein Fremdschlüssel,
+siehe Phase-4-Entscheidung dazu) — sie sind der Nachweis, dass und wann die Löschung stattfand, nicht
+Teil der zu löschenden personenbezogenen Daten selbst.
+
+**Audit-Log-Vollständigkeit: schreibende _sicherheits-/verwaltungsrelevante_ Aktionen, nicht jede
+UI-Zustandsänderung.** PROMPT.md Abschnitt 9 fordert "Audit-Log für alle schreibenden Aktionen
+vollständig". Geprüft wurden alle `...Action`-Funktionen in `src/actions/` sowie alle Route
+Handler — Korrekturen, Stornierungen, Ein-/Auschecken (eigen und fremd), Verlängerungen/
+-genehmigungen, Benutzerverwaltung, Einstellungen/Wohnbereiche, Logins/Passwort-Resets,
+Daten-Exporte und die automatisierte Löschung schreiben bereits einen Eintrag. Bewusst **nicht**
+auditiert: `markNotificationReadAction` (eigene Benachrichtigung als gelesen markieren) und
+`subscribeToPushAction`/`unsubscribeFromPushAction` (Push-Gerät registrieren/abmelden) — beides
+rein persönliche UI-Zustände ohne Aufsichts- oder Missbrauchsrelevanz für Dritte, deren
+Protokollierung die Tabelle nur mit Rauschen füllen würde, ohne einem Betroffenenrecht oder einer
+Nachvollziehbarkeitspflicht zu dienen. Dokumentiert zusätzlich in `docs/datenschutz.md` Abschnitt 10.
+
+**Eigene-Daten-Export unter `/api/v1/export/eigene-daten`, für alle drei Rollen identisch.** Die
+Rechte-Matrix (Abschnitt 5) gewährt "Eigene Daten exportieren" gleichermaßen Schülern, Mitarbeitern
+und Admins — ein Route Handler mit `requireApiRole("STUDENT", "STAFF", "ADMIN")` (praktisch "jede
+angemeldete Rolle") statt drei rollenspezifischer Kopien. Der UI-Einstiegspunkt
+(`src/components/data-export-links.tsx`) sitzt auf `/profil` (Schüler, einzige Seite mit
+persönlichen Einstellungen) sowie auf den Benachrichtigungsseiten für Mitarbeiter/Admin (die
+bislang einzige rollenübergreifende "persönliche" Seite dieser beiden Rollen, siehe Phase-6-
+Entscheidung zu `/staff/benachrichtigungen`/`/admin/benachrichtigungen`) — keine neue,
+in PROMPT.md nicht vorgesehene Profilseite für Mitarbeiter/Admin nur für diesen einen Zweck.
+
+**Security-Header über `next.config.ts#headers()`, mit `'unsafe-inline'` für `script-src`/
+`style-src`.** `headers()` ist reine Next.js-Routing-Konfiguration und funktioniert — anders als
+`next-pwa` (Phase 6) — unverändert mit `next build --turbopack`. Der Anti-Flash-Theme-Init-Score im
+Root-Layout muss inline vor der Hydration laufen, und React setzt zahlreiche `style`-Props (Live-
+Übersicht, Bottom-Nav-`safe-area-inset`, Recharts-SVGs) als echte Inline-Attribute — beides würde
+eine strikte, nonce-basierte CSP ohne größeren Umbau (pro Request generierte, durch Middleware und
+Layout durchgereichte Nonce) blockieren. Alle anderen Direktiven sind eng gefasst
+(`object-src 'none'`, `frame-ancestors 'none'`, `base-uri 'self'`, `form-action 'self'`, keine
+externen Quellen). `Strict-Transport-Security` wird unconditional gesetzt — Browser ignorieren den
+Header ohnehin, wenn er nicht über HTTPS ausgeliefert wird, ein bedingtes Weglassen für lokale
+HTTP-Entwicklung ist daher unnötig.
+
+**Zielorte-Sichtbarkeit verifiziert, keine Code-Änderung nötig.** Alle Vorkommen von
+`Absence.destination` im Code (Student-eigene Seiten, Staff-/Admin-Seiten mit
+`VIEW_PRESENCE_LIST`/`VIEW_OTHER_HISTORY`) wurden per Volltextsuche geprüft; keine Statistik-,
+Export- oder Audit-Log-Ansicht und keine Push-/In-App-Benachrichtigung gibt den Zielort außerhalb
+dieser beiden autorisierten Fälle preis (Details in `docs/datenschutz.md` Abschnitt 5).
+
+**RBAC-Matrix-Test iteriert über eine Routentabelle statt 20 Einzeltests.** Die für Phase 7
+geforderte Verifikation "für jede Rolle jeden geschützten Endpunkt" ist in `e2e/rbac-matrix.spec.ts`
+als eine Datentabelle aller Seiten mit ihren laut Abschnitt 5 erlaubten Rollen umgesetzt; vier Tests
+(nicht angemeldet, Schüler, Mitarbeiter, Admin) iterieren jeweils über die komplette Tabelle. Das
+deckt 20 Routen × 4 Zugriffs-Zustände ab, ohne 80 nahezu identische Einzeltests zu duplizieren, und
+bleibt erweiterbar, sobald neue Seiten hinzukommen.
+
+**Bugfix in `prisma/seed.ts`: `checkedOutAt` der "rechtzeitig abwesend"-Ausgangslage war absolut
+statt relativ zu `Date.now()`.** Bei der Verifikation dieser Phase schlug `e2e/staff.spec.ts`
+("Korrektur mit Audit-Log") reproduzierbar fehl, sobald das Seed-Skript vor 11:00 Uhr lief: Lenas
+initiale aktive Abwesenheit hatte `checkedOutAt: atHour(0, 14, 0)` (heute, fester Zeitpunkt 14:00)
+und `plannedReturnAt: Date.now() + 3h`. Lief das Skript z. B. um 06:00 Uhr, ergab das
+`plannedReturnAt` ≈ 09:00 — vor dem `checkedOutAt` von 14:00 desselben Tages. Das verletzt die
+Domänenregel "geplante Rückkehr muss nach der Auscheckzeit liegen" (`correctAbsenceSchema` in
+`src/lib/validation/staff.ts`) schon im Ausgangszustand der Seed-Daten, nicht erst durch eine
+Korrektur — jede Korrektur, die (wie im Test) von diesem `plannedReturnAt` ausgeht, scheiterte
+serverseitig an genau dieser Validierung. Behoben durch Angleichung an die bereits korrekte
+"überfällig"-Ausgangslage direkt darunter: `checkedOutAt: Date.now() - 5h` statt eines festen
+Uhrzeit-Werts — damit liegt der Checkout-Zeitpunkt unabhängig von der Tageszeit beim Seeden immer
+sicher vor `plannedReturnAt` (`Date.now() + 3h`). Kein Zusammenhang mit den übrigen Phase-7-
+Änderungen (Security-Header, Audit-Log, Export) — verifiziert durch mehrfachen, stabil grünen
+Lauf der vollständigen E2E-Suite (`pnpm test:e2e`) nach dem Fix.
