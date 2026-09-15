@@ -487,3 +487,27 @@ Uhrzeit-Werts — damit liegt der Checkout-Zeitpunkt unabhängig von der Tagesze
 sicher vor `plannedReturnAt` (`Date.now() + 3h`). Kein Zusammenhang mit den übrigen Phase-7-
 Änderungen (Security-Header, Audit-Log, Export) — verifiziert durch mehrfachen, stabil grünen
 Lauf der vollständigen E2E-Suite (`pnpm test:e2e`) nach dem Fix.
+
+## Phase 8
+
+**Lasttest misst direkt auf Prisma-Ebene statt über den vollen HTTP-/Auth.js-Stack.**
+`scripts/lasttest.ts` (`pnpm test:load`) simuliert die zwei realistischen Lastspitzen eines
+Internats mit ~150 Schülern (gleichzeitiges Aus-/Einchecken zu Unterrichtsschluss bzw. zur
+Nachtruhe) durch direkte, parallele Aufrufe derselben Prisma-Queries, die `checkOutAction`/
+`checkInAction` (`src/actions/absences.ts`) und `getLiveOverviewSnapshot`
+(`src/lib/admin-queries.ts`) tatsächlich ausführen — ohne Login/Session/CSRF drumherum. Begründung:
+Die Datenbank (Connection-Pool, partieller Unique-Index `one_active_absence` unter Konkurrenz) ist
+die einzige Ressource, die bei paralleler Last überhaupt gemeinsam genutzt wird; Next.js-Rendering
+und Auth.js-Session-Handling laufen pro Request unabhängig und günstig ab und sind nicht die
+begrenzende Größe. Ein vollwertiger HTTP-Lasttest hätte zusätzlich 150 echte, parallele
+NextAuth-Credentials-Logins (inkl. CSRF-Token-Handling) simulieren müssen, ohne die eigentliche
+Fragestellung ("hält die DB die Schreib-/Lesespitze aus?") genauer zu beantworten. Details,
+Methodik und Ergebnisse in `docs/lasttest.md`.
+
+**Lasttest-Skript legt temporäre Testnutzer per Prisma direkt an, nicht über `prisma/seed.ts`.**
+CLAUDE.md verlangt "Testdaten ausschließlich in `prisma/seed.ts`" für die Demo-/Entwicklungsdaten
+der Anwendung — ein Lasttest-Werkzeug ist davon zu unterscheiden: Es erzeugt keine dauerhaften
+Beispieldaten, sondern kurzlebige, klar als `lasttest-*@lasttest.local` markierte Nutzer, die das
+Skript am Ende desselben Laufs (Erfolg oder Fehler, `finally`-Block) wieder vollständig entfernt.
+Eine Aufnahme in `prisma/seed.ts` wäre hier fachlich falsch, weil Lasttest-Daten nicht Teil des
+dauerhaften Entwicklungs-/Demo-Zustands sein sollen.

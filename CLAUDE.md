@@ -55,6 +55,7 @@ pnpm format:check          # Prettier prüft nur
 pnpm test                  # Vitest (Unit/Domain), grün auch bei 0 Tests
 pnpm test:watch            # Vitest im Watch-Modus
 pnpm test:e2e              # Playwright E2E-Tests
+pnpm test:load             # Lasttest (scripts/lasttest.ts, siehe docs/lasttest.md)
 ```
 
 Seit Phase 1 zusätzlich (Prisma, Version `6.19.3` gepinnt — siehe `docs/decisions.md`):
@@ -137,7 +138,10 @@ prisma/
 docs/
   decisions.md         # Designentscheidungen, ein Absatz pro Entscheidung
   datenschutz.md        # ab Phase 7
+  lasttest.md          # ab Phase 8
 e2e/                   # Playwright-Tests
+scripts/
+  lasttest.ts          # Lasttest (pnpm test:load), siehe docs/lasttest.md
 ```
 
 ## Domänenregeln (verbindlich, siehe PROMPT.md Abschnitt 3)

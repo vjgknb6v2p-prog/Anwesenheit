@@ -7,19 +7,19 @@ Verlassen des Geländes am Handy aus und beim Zurückkommen ein; Mitarbeiter und
 Der vollständige Projektauftrag steht in [`PROMPT.md`](./PROMPT.md), die Arbeitsregeln, der Stack
 und die Domänenlogik in [`CLAUDE.md`](./CLAUDE.md).
 
-> **Stand:** Phase 7 (Datenschutz & Härtung) — eigene Daten als JSON/CSV exportierbar
-> (`/api/v1/export/eigene-daten`, Link auf `/profil` bzw. den Benachrichtigungsseiten), Löschkonzept
-> aus Soft-Delete (Benutzer) und automatischem Hard-Delete alter Abwesenheiten
-> (`/api/v1/cron/cleanup`, Frist über das Setting „Aufbewahrungsfrist" einstellbar), Security-Header
-> (CSP, HSTS, X-Frame-Options u. a., siehe `next.config.ts`), vollständiges Audit-Log für
-> sicherheits-/verwaltungsrelevante Aktionen und `docs/datenschutz.md` mit einem
-> Verarbeitungsverzeichnis-Entwurf. Eine rollenübergreifende E2E-Testmatrix
-> (`e2e/rbac-matrix.spec.ts`) verifiziert die Rechte-Matrix für jede Seite und jede Rolle. Davor:
-> PWA & Benachrichtigungen (Phase 6, Manifest/Service Worker/Offline-Fallback, Web Push, Cron-Tick
-> für Erinnerungen — siehe [Cron-Tick](#cron-tick-erinnerungen--sammelmeldung) unten), Statistiken
-> (Phase 5) sowie ein seit Phase 4 vollständiger Admin-Bereich (Live-Übersicht, Benutzerverwaltung,
-> Wohnbereiche, Einstellungen, Audit-Log). Phase 8 (Abschluss) folgt gemäß Phasenplan in
-> `PROMPT.md`.
+> **Stand:** Phase 8 (Abschluss) — Projekt vollständig gemäß Phasenplan in `PROMPT.md` Abschnitt 9
+> umgesetzt. README mit Setup-, Seed-, Deploy- und Cron-Anleitung (siehe [Deploy](#deploy) unten),
+> `docs/decisions.md` mit allen Designentscheidungen und einer Lasttest-Notiz
+> ([`docs/lasttest.md`](./docs/lasttest.md), ausführbar mit `pnpm test:load`). Davor: Datenschutz &
+> Härtung (Phase 7 — eigene Daten als JSON/CSV exportierbar unter `/api/v1/export/eigene-daten`,
+> Löschkonzept aus Soft-Delete und automatischem Hard-Delete alter Abwesenheiten über
+> `/api/v1/cron/cleanup`, Security-Header über `next.config.ts`, vollständiges Audit-Log,
+> `docs/datenschutz.md` sowie eine rollenübergreifende E2E-Testmatrix in
+> `e2e/rbac-matrix.spec.ts`), PWA & Benachrichtigungen (Phase 6, Manifest/Service Worker/
+> Offline-Fallback, Web Push, Cron-Tick für Erinnerungen — siehe
+> [Cron-Tick](#cron-tick-erinnerungen--sammelmeldung) unten), Statistiken (Phase 5) sowie ein seit
+> Phase 4 vollständiger Admin-Bereich (Live-Übersicht, Benutzerverwaltung, Wohnbereiche,
+> Einstellungen, Audit-Log).
 
 ## Voraussetzungen
 
@@ -61,6 +61,7 @@ Die App läuft danach unter <http://localhost:3000>.
 | `pnpm format` / `pnpm format:check` | Prettier                              |
 | `pnpm test`                         | Vitest (Unit-/Domänentests)           |
 | `pnpm test:e2e`                     | Playwright (E2E)                      |
+| `pnpm test:load`                    | Lasttest (siehe `docs/lasttest.md`)   |
 
 Zusätzlich (ab Phase 1, Prisma):
 
@@ -76,6 +77,44 @@ Zusätzlich (ab Phase 1, Prisma):
 Siehe [`.env.example`](./.env.example) für alle Variablen und Kommentare, ab welcher Phase sie
 benötigt werden (Datenbank, Auth.js, Web-Push/VAPID, SMTP, Cron-Secret). `AUTH_SECRET` sollte
 lokal per `pnpm dlx auth secret` erzeugt werden.
+
+## Deploy
+
+Die App ist ein einzelner Next.js-Prozess ohne Redis/separates Backend — es wird nur eine
+erreichbare PostgreSQL-16-Instanz benötigt. Zwei Betriebsarten:
+
+### Vercel
+
+1. Repository importieren, alle Variablen aus `.env.example` in den Projekt-Einstellungen setzen
+   (insbesondere `DATABASE_URL` einer erreichbaren Postgres-Instanz, z. B. Vercel Postgres/Neon/
+   Supabase — `docker-compose.yml` ist nur für die lokale Entwicklung gedacht).
+2. Vor dem ersten Deploy einmalig `pnpm db:push && pnpm db:seed` gegen die Ziel-Datenbank ausführen
+   (lokal mit der Produktions-`DATABASE_URL` in der Umgebung, oder als einmaliger CI-Schritt) —
+   `pnpm build` führt bewusst **keine** Migration aus, damit ein fehlgeschlagener Build niemals ein
+   Schema halb migriert zurücklässt.
+3. `vercel.json` mit den Cron-Einträgen aus den Abschnitten [Cron-Tick](#cron-tick-erinnerungen--sammelmeldung)
+   und [Cron-Cleanup](#cron-cleanup-aufbewahrungsfrist) anlegen (Vercel Cron ruft `GET`-Routen nach
+   Zeitplan auf).
+4. Deploy auslösen (Push auf den verknüpften Branch bzw. `vercel deploy --prod`). Vercel führt
+   `pnpm build` automatisch aus.
+
+### Selbstgehostet (z. B. eigener Server/VM mit Docker Compose)
+
+```bash
+docker compose up -d          # PostgreSQL 16
+pnpm install --prod=false     # Build braucht Dev-Dependencies (TypeScript, Tailwind, …)
+pnpm db:push                  # bestehende Migrationen anwenden
+pnpm db:seed                  # nur beim allerersten Deploy / für Demo-Daten
+pnpm build
+pnpm start                    # Next.js-Produktionsserver, Standardport 3000
+```
+
+Für den Dauerbetrieb `pnpm start` unter einem Prozess-Supervisor laufen lassen (z. B. systemd-
+Service analog zu den Timer-Beispielen unten, oder `pm2 start pnpm -- start`) und dahinter einen
+Reverse Proxy mit TLS (nginx/Caddy) betreiben — die in `next.config.ts` gesetzte
+`Strict-Transport-Security`-Header wirkt nur über HTTPS. Bei Schema-Änderungen in künftigen Releases
+vor jedem Neustart erneut `pnpm db:push` ausführen (nicht `pnpm db:seed`, das würde erneut
+Demo-Daten anlegen). Die beiden Cron-Endpunkte laufen selbstgehostet über systemd-Timer, siehe unten.
 
 ## Cron-Tick (Erinnerungen & Sammelmeldung)
 
@@ -155,3 +194,5 @@ Endpunkt anlegen.
 
 - [`docs/decisions.md`](./docs/decisions.md) — Designentscheidungen, die der Auftrag offenlässt.
 - [`docs/datenschutz.md`](./docs/datenschutz.md) — Verarbeitungsverzeichnis-Entwurf (Phase 7).
+- [`docs/lasttest.md`](./docs/lasttest.md) — Lasttest-Notiz (Phase 8): Methodik, Ergebnisse,
+  Einordnung. Ausführbar mit `pnpm test:load` (`scripts/lasttest.ts`).
