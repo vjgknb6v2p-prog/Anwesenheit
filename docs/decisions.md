@@ -511,3 +511,18 @@ Beispieldaten, sondern kurzlebige, klar als `lasttest-*@lasttest.local` markiert
 Skript am Ende desselben Laufs (Erfolg oder Fehler, `finally`-Block) wieder vollständig entfernt.
 Eine Aufnahme in `prisma/seed.ts` wäre hier fachlich falsch, weil Lasttest-Daten nicht Teil des
 dauerhaften Entwicklungs-/Demo-Zustands sein sollen.
+
+## Nach Phase 8 (Fix)
+
+**`'unsafe-eval'` in der CSP nur außerhalb von Produktion (`next.config.ts`).** Beim ersten
+Test des lokalen Dev-Setups (`next dev --turbopack`) blieb der Login-Button wirkungslos: Turbopacks
+Dev-Runtime (Hot Module Replacement, eval-basierte Source-Maps) nutzt `eval()` im Browser, was die
+in Phase 7 eingeführte CSP ohne `'unsafe-eval'` blockierte — sichtbar als Chrome-DevTools-"Issue"
+("Content Security Policy of your site blocks the use of 'eval' in JavaScript") und als
+Redirect-Loop zwischen `/login` und `/admin` durch dadurch kaputten Client-Router-Code. In der
+Produktions-E2E-Suite (`pnpm test:e2e`, läuft gegen `pnpm start`) fiel das nicht auf, da
+`next build`/`next start` kein `eval()` benötigen. Fix: `script-src` bekommt `'unsafe-eval'` nur,
+wenn `process.env.NODE_ENV !== "production"` — Produktion bleibt unverändert streng, lokale
+Entwicklung funktioniert wieder. Verifiziert per Playwright-Login-Test gegen `next dev` (kein
+CSP-Fehler mehr, landet korrekt auf `/admin`) sowie die vollständige E2E-Suite gegen `pnpm start`
+(weiterhin 22/22 grün, mehrfach stabil).
