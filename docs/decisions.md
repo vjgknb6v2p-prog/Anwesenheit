@@ -768,3 +768,18 @@ Lesefluss des Labels selbst zu stören.
 `transition-colors` auf dem Link und `scale-110` mit `transition-transform` auf dem Icon machen den
 Tab-Wechsel für Schüler fühlbar, ohne die Tab-Bar selbst zu verschieben (kein Layout-Shift). Der
 Badge-Zähler blendet per `tw-animate-css` (`animate-in zoom-in`) ein, wenn er neu erscheint.
+
+## Vercel-Deploy: `vercel.json` + Cron-Auth-Header
+
+**`vercel.json` mit beiden Cron-Jobs direkt ins Repo aufgenommen**, statt es dem Deploy-Schritt zu
+überlassen (README beschrieb bisher nur, wie die Datei anzulegen wäre). Damit registriert bereits
+der erste Vercel-Import beide Endpunkte (`/api/v1/cron/tick` alle 5 Minuten,
+`/api/v1/cron/cleanup` täglich um 3 Uhr) ohne manuellen Zwischenschritt.
+
+**`isAuthorized()` aus beiden Cron-Route-Handlern nach `src/lib/cron-auth.ts` extrahiert und um
+`Authorization: Bearer <secret>` ergänzt.** Vercel Cron sendet für über `vercel.json` konfigurierte
+Jobs automatisch `Authorization: Bearer $CRON_SECRET` statt eines frei wählbaren Headers — die
+bisherige Prüfung akzeptierte nur `x-cron-secret` (für selbstgehostete Aufrufer gedacht) und hätte
+Vercels eigenes Cron-Feature dadurch abgelehnt. Beide Formen werden jetzt gleichwertig akzeptiert,
+in einer gemeinsamen Funktion statt zweimal dupliziertem Code, um ein zukünftiges Auseinanderlaufen
+der beiden Routen zu vermeiden.

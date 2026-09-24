@@ -132,7 +132,9 @@ src/
                        # (Konversationen/Thread/Empfängerliste), calendar-queries.ts
                        # (Abwesenheiten pro Kalendermonat), wochenbericht-queries.ts
                        # (Wochenbericht-Aggregation + Druckansicht-Formatierung),
-                       # search-queries.ts (Schüler-/Mitarbeitersuche), validation/
+                       # search-queries.ts (Schüler-/Mitarbeitersuche), cron-auth.ts
+                       # (CRON_SECRET-Prüfung für beide Cron-Route-Handler,
+                       # x-cron-secret + Authorization: Bearer), validation/
                        # (Zod-Schemas, u. a. admin.ts, push.ts, messages.ts)
   components/
     ui/                # Minimal selbst geschriebene UI-Primitive (Button, Input, Label,
@@ -156,6 +158,7 @@ src/
     beurlaubungsschein-view.tsx (Druckansicht, "use client", window.print()),
     wochenbericht-view.tsx (Druckansicht mit Wochen-Navigation, "use client")
 next.config.ts         # Security-Header (CSP, HSTS, X-Frame-Options, …)
+vercel.json             # Vercel-Cron-Jobs (Cron-Tick alle 5 Min., Cron-Cleanup täglich 3 Uhr)
   auth.ts              # Auth.js v5: Credentials-Provider + Prisma/Argon2
   auth.config.ts       # Edge-taugliche Basis (pages, authorized/jwt/session-Callbacks,
                        # PUBLIC_PATHS inkl. PWA-Assets + /api/v1/cron)

@@ -1,17 +1,13 @@
 import type { NextRequest } from "next/server";
 import { isEligibleForHardDelete } from "@/domain/retention";
 import { writeAuditLog } from "@/lib/audit";
+import { isCronAuthorized } from "@/lib/cron-auth";
 import { db } from "@/lib/db";
 import { logger } from "@/lib/logger";
 import { getSettings } from "@/lib/settings";
 
 // Muss bei jedem Aufruf frisch gegen die DB laufen, nie gecacht/statisch.
 export const dynamic = "force-dynamic";
-
-function isAuthorized(request: NextRequest): boolean {
-  const secret = process.env.CRON_SECRET;
-  return Boolean(secret) && request.headers.get("x-cron-secret") === secret;
-}
 
 /**
  * Hard-Delete-Job (PROMPT.md Abschnitt 9, Phase 7 — "Löschkonzept"): löscht
@@ -27,7 +23,7 @@ function isAuthorized(request: NextRequest): boolean {
  * README.md).
  */
 export async function GET(request: NextRequest) {
-  if (!isAuthorized(request)) {
+  if (!isCronAuthorized(request)) {
     return new Response("Unauthorized", { status: 401 });
   }
 
