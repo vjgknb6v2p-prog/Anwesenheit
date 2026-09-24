@@ -14,10 +14,21 @@ import type { NextConfig } from "next";
  * basierte CSP wäre strenger, erfordert aber pro Request generierte und
  * durchgereichte Nonces (Middleware + Layout) — für den Umfang dieser Phase
  * bewusst zurückgestellt, alle anderen Direktiven sind eng gefasst.
+ *
+ * `'unsafe-eval'` nur außerhalb von Produktion: Turbopacks/Webpacks
+ * Dev-Runtime (Hot Module Replacement, eval-basierte Source-Maps) braucht
+ * `eval()` im Browser. Eine CSP ohne `'unsafe-eval'` blockiert das in
+ * `next dev` und bricht dadurch clientseitiges JavaScript unvorhersehbar
+ * (beobachtet: Login-Formular reagiert scheinbar nicht, tatsächlich ein
+ * Redirect-Loop durch kaputten Client-Router-Code). Betrifft nur den
+ * Dev-Server — `next build`/`next start` brauchen kein `eval()` und bleiben
+ * ohne `'unsafe-eval'` in Produktion.
  */
+const IS_PRODUCTION = process.env.NODE_ENV === "production";
+
 const CSP_DIRECTIVES = [
   "default-src 'self'",
-  "script-src 'self' 'unsafe-inline'",
+  `script-src 'self' 'unsafe-inline'${IS_PRODUCTION ? "" : " 'unsafe-eval'"}`,
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self'",
   "font-src 'self'",
