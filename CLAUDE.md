@@ -108,7 +108,8 @@ src/
                        # notification-type.ts, notification-rules.ts (Erinnerungs-/
                        # Überfälligkeits-/Sammelmeldungs-Regeln für den Cron-Tick),
                        # retention.ts (Hard-Delete-Kandidaten-Regel), messaging.ts
-                       # (canSendMessageTo-Regel, Konversations-Zusammenfassung)
+                       # (canSendMessageTo-Regel, Konversations-Zusammenfassung),
+                       # calendar.ts (Kalender-Gruppierung pro Monat)
   lib/                 # Querschnitt: authz.ts (inkl. requireApiRole für Route Handler),
                        # db.ts, password.ts, roles.ts, tokens.ts, audit.ts, logger.ts,
                        # settings.ts (inkl. dataRetentionMonths), time.ts
@@ -117,13 +118,15 @@ src/
                        # Aggregation für Statistiken), stats-params.ts (Zeitraum-/
                        # Filter-Parsing aus searchParams), push.ts (Web-Push-Versand,
                        # best effort), mail/mailer.ts, messages-queries.ts
-                       # (Konversationen/Thread/Empfängerliste), validation/
-                       # (Zod-Schemas, u. a. admin.ts, push.ts, messages.ts)
+                       # (Konversationen/Thread/Empfängerliste), calendar-queries.ts
+                       # (Abwesenheiten pro Kalendermonat), validation/ (Zod-Schemas,
+                       # u. a. admin.ts, push.ts, messages.ts)
   components/
     ui/                # Minimal selbst geschriebene UI-Primitive (Button, Input, Label,
                        # Textarea, Sheet) im shadcn/ui-Stil (components.json vorbereitet,
                        # siehe docs/decisions.md)
     stats/             # stats-charts.tsx (Recharts, "use client"), stats-filter-form.tsx
+    calendar/          # absence-calendar.tsx (Monatskalender, Server-Komponente)
     admin/             # user-form-sheet.tsx, user-row-actions.tsx, role-select.tsx,
                        # live-overview-client.tsx (SSE + Fallback-Polling)
     bottom-nav.tsx, status-badge.tsx, theme-toggle.tsx, check-in-button.tsx,

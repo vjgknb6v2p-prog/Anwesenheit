@@ -567,3 +567,16 @@ alle Wohnbereiche.
 echten Nachrichtenfunktion zwischen Personen. Die Glocke heißt jetzt "Hinweise", das neue
 Sprechblasen-Symbol "Nachrichten" — inhaltlich passender und eindeutig unterscheidbar. Zwei
 getrennte Ungelesen-Zähler (`Notification` vs. `Message`), keine Vermischung.
+
+**PWA-Shortcuts (`manifest.ts`) rollenabhängig, da `manifest()` die Session lesen darf.**
+`manifest()` läuft als Next.js-Route-Handler pro Request und darf daher `getSessionUser()`
+aufrufen (kein einmalig generiertes statisches JSON) — die App-Shortcuts (Homescreen-Icon lang
+drücken) zeigen dadurch pro Rolle die jeweils wichtigsten Direktlinks statt eines generischen,
+für Mitarbeiter/Admin unpassenden Sets.
+
+**Kalender-Kachel zeigt Abwesenheiten am Auscheck-Tag, nicht über die ganze Dauer verteilt.**
+Dieselbe Vereinfachung wie bei `groupAbsencesByPeriod` (Phase 5): eine mehrtägige Abwesenheit
+(z. B. Wochenendheimfahrt) erscheint nur am Tag des Auscheckens, nicht an jedem überspannten Tag.
+Konsistent mit der bestehenden Statistik-Logik und einfacher zu lesen als ein "Balken über mehrere
+Tage"-Kalender, der für diese Nutzergruppe (Mitarbeiter, schneller Überblick) keinen Mehrwert
+bietet.

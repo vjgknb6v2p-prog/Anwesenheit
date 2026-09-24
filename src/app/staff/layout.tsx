@@ -10,6 +10,7 @@ const NAV_ITEMS = [
   { href: "/staff/ueberfaellig", label: "Überfällig" },
   { href: "/staff/schueler", label: "Schüler" },
   { href: "/staff/historie", label: "Historie" },
+  { href: "/staff/kalender", label: "Kalender" },
   { href: "/staff/statistiken", label: "Statistiken" },
   { href: "/staff/nachrichten", label: "Nachrichten" },
   { href: "/staff/benachrichtigungen", label: "Benachrichtigungen" },
