@@ -20,7 +20,7 @@ export interface StatsPageParams {
  * Nutzer als Europe/Berlin-Kalendertag gedacht (wie jede andere angezeigte
  * Zeit, siehe `src/lib/time.ts`), nicht als UTC-Datum.
  */
-function parseLocalDateParam(value: string | undefined): Date | null {
+export function parseLocalDateParam(value: string | undefined): Date | null {
   if (!value) {
     return null;
   }

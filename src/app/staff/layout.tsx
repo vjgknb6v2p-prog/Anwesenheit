@@ -12,6 +12,7 @@ const NAV_ITEMS = [
   { href: "/staff/historie", label: "Historie" },
   { href: "/staff/kalender", label: "Kalender" },
   { href: "/staff/statistiken", label: "Statistiken" },
+  { href: "/staff/wochenbericht", label: "Wochenbericht" },
   { href: "/staff/nachrichten", label: "Nachrichten" },
   { href: "/staff/benachrichtigungen", label: "Benachrichtigungen" },
 ] as const;
@@ -37,7 +38,7 @@ export default async function StaffLayout({
 
   return (
     <div className="min-h-screen">
-      <header className="border-b">
+      <header className="border-b print:hidden">
         <nav className="mx-auto flex max-w-5xl flex-wrap items-center gap-1 px-4 py-3">
           {NAV_ITEMS.map((item) => (
             <Link

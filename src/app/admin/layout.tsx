@@ -11,6 +11,7 @@ const NAV_ITEMS = [
   { href: "/admin/abwesenheiten", label: "Abwesenheiten" },
   { href: "/admin/kalender", label: "Kalender" },
   { href: "/admin/statistiken", label: "Statistiken" },
+  { href: "/admin/wochenbericht", label: "Wochenbericht" },
   { href: "/admin/nachrichten", label: "Nachrichten" },
   { href: "/admin/benachrichtigungen", label: "Benachrichtigungen" },
   { href: "/admin/audit", label: "Audit-Log" },
@@ -39,7 +40,7 @@ export default async function AdminLayout({
 
   return (
     <div className="min-h-screen">
-      <header className="border-b">
+      <header className="border-b print:hidden">
         <nav className="mx-auto flex max-w-6xl flex-wrap items-center gap-1 px-4 py-3">
           {NAV_ITEMS.map((item) => (
             <Link

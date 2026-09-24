@@ -78,12 +78,14 @@ src/
     offline/           # Offline-Fallback (öffentlich, siehe PUBLIC_PATHS)
     beurlaubungsschein/[absenceId]/  # Druckansicht (kein Rollen-Layout), Schüler
                        # nur eigene Abwesenheit, Mitarbeiter/Admin jede
-    staff/              # Mitarbeiter (Top-Nav-Layout): page.tsx (Dashboard),
-                       # abwesend/, ueberfaellig/, schueler/, schueler/[id]/, historie/,
-                       # statistiken/ (nur eigener Wohnbereich), nachrichten/,
-                       # benachrichtigungen/
-    admin/             # Admin (Top-Nav-Layout): page.tsx (Live-Übersicht, SSE),
-                       # schueler/, mitarbeiter/, abwesenheiten/, statistiken/,
+    staff/              # Mitarbeiter (Top-Nav-Layout, print:hidden beim Drucken):
+                       # page.tsx (Dashboard), abwesend/, ueberfaellig/, schueler/,
+                       # schueler/[id]/, historie/, statistiken/ (nur eigener
+                       # Wohnbereich), wochenbericht/ (nur eigener Wohnbereich),
+                       # nachrichten/, benachrichtigungen/
+    admin/             # Admin (Top-Nav-Layout, print:hidden beim Drucken):
+                       # page.tsx (Live-Übersicht, SSE), schueler/, mitarbeiter/,
+                       # abwesenheiten/, statistiken/, wochenbericht/,
                        # nachrichten/, benachrichtigungen/, audit/, wohnbereiche/,
                        # einstellungen/
     api/auth/[...nextauth]/route.ts
@@ -113,7 +115,8 @@ src/
                        # (canSendMessageTo-Regel, Konversations-Zusammenfassung),
                        # calendar.ts (Kalender-Gruppierung pro Monat), stats-extended.ts
                        # (Heatmap Wochentag×Uhrzeit, Ziel-Leaderboard, Trendvergleich),
-                       # group-actions.ts (Eligibility-Filter für Gruppen-Sammelaktionen)
+                       # group-actions.ts (Eligibility-Filter für Gruppen-Sammelaktionen),
+                       # week.ts (Montag–Sonntag-Wochengrenzen für den Wochenbericht)
   lib/                 # Querschnitt: authz.ts (inkl. requireApiRole für Route Handler),
                        # db.ts, password.ts, roles.ts, tokens.ts, audit.ts, logger.ts,
                        # settings.ts (inkl. dataRetentionMonths), time.ts
@@ -124,8 +127,9 @@ src/
                        # Filter-Parsing aus searchParams), push.ts (Web-Push-Versand,
                        # best effort), mail/mailer.ts, messages-queries.ts
                        # (Konversationen/Thread/Empfängerliste), calendar-queries.ts
-                       # (Abwesenheiten pro Kalendermonat), validation/ (Zod-Schemas,
-                       # u. a. admin.ts, push.ts, messages.ts)
+                       # (Abwesenheiten pro Kalendermonat), wochenbericht-queries.ts
+                       # (Wochenbericht-Aggregation + Druckansicht-Formatierung),
+                       # validation/ (Zod-Schemas, u. a. admin.ts, push.ts, messages.ts)
   components/
     ui/                # Minimal selbst geschriebene UI-Primitive (Button, Input, Label,
                        # Textarea, Sheet) im shadcn/ui-Stil (components.json vorbereitet,
@@ -145,7 +149,8 @@ src/
     data-export-links.tsx (Eigene-Daten-Export, alle Rollen),
     messages-client.tsx (geteilt über alle 3 Nachrichtenseiten: Inbox,
     Thread, Compose, Rundruf für Staff/Admin),
-    beurlaubungsschein-view.tsx (Druckansicht, "use client", window.print())
+    beurlaubungsschein-view.tsx (Druckansicht, "use client", window.print()),
+    wochenbericht-view.tsx (Druckansicht mit Wochen-Navigation, "use client")
 next.config.ts         # Security-Header (CSP, HSTS, X-Frame-Options, …)
   auth.ts              # Auth.js v5: Credentials-Provider + Prisma/Argon2
   auth.config.ts       # Edge-taugliche Basis (pages, authorized/jwt/session-Callbacks,
