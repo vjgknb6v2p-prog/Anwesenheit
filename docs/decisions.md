@@ -668,3 +668,33 @@ fremden Abwesenheit aufruft, wird kontrolliert auf die eigene Startseite umgelei
 kein Datenleck über eine eigentlich verbotene Seite). Stornierte Abwesenheiten zeigen den Schein
 weiterhin an (Nachvollziehbarkeit), aber mit einem deutlichen Ungültigkeits-Hinweis statt ihn ganz
 zu verbergen.
+
+## Erweiterung: Wochenbericht-PDF-Export
+
+**Wiederverwendung von `getStatsSummary()` (Phase 5) statt eigener Aggregation.** Der
+Wochenbericht ist inhaltlich dieselbe Aggregation wie die Statistik-Seiten, nur fest auf eine
+Kalenderwoche eingeschränkt — `src/lib/wochenbericht-queries.ts` ruft `getStatsSummary()` mit
+Granularität `"day"` für genau eine Woche auf, statt die Zählung erneut zu implementieren. Neu ist
+nur `src/domain/week.ts` (`getWeekRange`, reine Funktion mit Unit-Tests): Montag–Sonntag-Grenzen
+einer Europe/Berlin-Woche, dieselbe Montag-Start-Konvention wie `periodStart()` in
+`src/domain/stats.ts`.
+
+**Tabellen statt Diagrammen im Druck.** Anders als die interaktiven Statistik-Seiten (Recharts,
+Phase 5) zeigt der Wochenbericht einfache HTML-Tabellen. Recharts erzeugt SVGs, die sich über
+`window.print()` browserübergreifend nicht zuverlässig in ein sauberes PDF überführen lassen
+(abgeschnittene/verzerrte Grafiken je nach Drucker-Engine) — Tabellen sind für dieses Format
+robuster und konsistent mit der Beurlaubungsschein-Druckseite (gleiches `window.print()`-Muster,
+siehe oben).
+
+**`/staff/wochenbericht` und `/admin/wochenbericht` bleiben in den Rollen-Layouts, die Top-Nav wird
+per `print:hidden` beim Drucken ausgeblendet.** Anders als der Beurlaubungsschein (eigenständige
+Route ohne Layout) ist der Wochenbericht wie Statistiken/Kalender ein regulärer Navigationspunkt,
+den Mitarbeiter/Admin auch nur am Bildschirm ansehen (Wochen-Navigation). Eine komplett separate,
+layoutlose Route hätte diese Navigation dupliziert; stattdessen bekommen `src/app/staff/layout.tsx`
+und `src/app/admin/layout.tsx` ein `print:hidden` auf dem `<header>`, das auch künftigen
+Druckseiten unter diesen Layouts zugutekommt.
+
+**Admin-Wohnbereichsfilter als eigenes, kleines GET-Formular statt Wiederverwendung von
+`StatsFilterForm`.** Der Wochenbericht braucht nur den Wohnbereichs-Filter (Zeitraum ist durch die
+Wochen-Navigation fest vorgegeben) — `StatsFilterForm` mit ungenutzten Von/Bis/Granularitäts-Feldern
+wäre hier irreführend gewesen.
