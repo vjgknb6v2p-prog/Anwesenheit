@@ -9,6 +9,7 @@ const NAV_ITEMS = [
   { href: "/admin/schueler", label: "Schüler" },
   { href: "/admin/mitarbeiter", label: "Mitarbeiter" },
   { href: "/admin/abwesenheiten", label: "Abwesenheiten" },
+  { href: "/admin/kalender", label: "Kalender" },
   { href: "/admin/statistiken", label: "Statistiken" },
   { href: "/admin/nachrichten", label: "Nachrichten" },
   { href: "/admin/benachrichtigungen", label: "Benachrichtigungen" },
