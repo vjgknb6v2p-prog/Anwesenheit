@@ -97,9 +97,10 @@ erreichbare PostgreSQL-16-Instanz benötigt. Zwei Betriebsarten:
    (lokal mit der Produktions-`DATABASE_URL` in der Umgebung, oder als einmaliger CI-Schritt) —
    `pnpm build` führt bewusst **keine** Migration aus, damit ein fehlgeschlagener Build niemals ein
    Schema halb migriert zurücklässt.
-3. `vercel.json` mit den Cron-Einträgen aus den Abschnitten [Cron-Tick](#cron-tick-erinnerungen--sammelmeldung)
-   und [Cron-Cleanup](#cron-cleanup-aufbewahrungsfrist) anlegen (Vercel Cron ruft `GET`-Routen nach
-   Zeitplan auf).
+3. `vercel.json` (bereits im Repo-Root vorhanden) registriert die beiden Cron-Jobs aus den
+   Abschnitten [Cron-Tick](#cron-tick-erinnerungen--sammelmeldung) und
+   [Cron-Cleanup](#cron-cleanup-aufbewahrungsfrist) — nichts weiter zu tun, außer `CRON_SECRET`
+   in den Projekt-Einstellungen zu setzen.
 4. Deploy auslösen (Push auf den verknüpften Branch bzw. `vercel deploy --prod`). Vercel führt
    `pnpm build` automatisch aus.
 
@@ -141,11 +142,10 @@ curl -H "x-cron-secret: $CRON_SECRET" https://<domain>/api/v1/cron/tick
 }
 ```
 
-Vercel Cron sendet automatisch einen `Authorization: Bearer $CRON_SECRET`-Header an vom Dashboard
-verwaltete Cron-Jobs; da dieser Endpunkt stattdessen `x-cron-secret` prüft, entweder den Header in
-`isAuthorized()` (`src/app/api/v1/cron/tick/route.ts`) ergänzen oder — einfacher für einen
-selbstgehosteten Betrieb — einen externen Scheduler mit freier Header-Wahl nutzen (z. B. den
-systemd-Timer unten).
+Vercel Cron sendet automatisch einen `Authorization: Bearer $CRON_SECRET`-Header an über
+`vercel.json` verwaltete Cron-Jobs — `isCronAuthorized()` (`src/lib/cron-auth.ts`) akzeptiert
+sowohl diesen als auch `x-cron-secret` (für selbstgehostete Aufrufer mit freier Header-Wahl, z. B.
+den systemd-Timer unten).
 
 **systemd-Timer** (selbstgehostet, z. B. Docker-Compose-Betrieb aus diesem Repo):
 
@@ -190,10 +190,9 @@ Datensätze). Anders als der Cron-Tick reicht hier ein täglicher Rhythmus:
 curl -H "x-cron-secret: $CRON_SECRET" https://<domain>/api/v1/cron/cleanup
 ```
 
-Für Vercel Cron einen weiteren Eintrag in `vercel.json` ergänzen
-(`{ "path": "/api/v1/cron/cleanup", "schedule": "0 3 * * *" }`, täglich um 3 Uhr) bzw. für den
-systemd-Timer oben eine zweite Service-/Timer-Datei mit `OnCalendar=03:00` und dem entsprechenden
-Endpunkt anlegen.
+Für Vercel Cron ist dieser Job bereits in `vercel.json` registriert (täglich um 3 Uhr) — nur für
+den systemd-Timer oben eine zweite Service-/Timer-Datei mit `OnCalendar=03:00` und dem
+entsprechenden Endpunkt anlegen.
 
 ## Weiterführende Dokumente
 
