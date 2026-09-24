@@ -8,8 +8,13 @@ export const metadata: Metadata = {
   title: "Schüler verwalten – CheckIn",
 };
 
-export default async function AdminStudentsPage() {
+export default async function AdminStudentsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ q?: string }>;
+}) {
   await requireRole("ADMIN");
+  const { q } = await searchParams;
 
   const [students, residentialAreas] = await Promise.all([
     db.user.findMany({
@@ -46,6 +51,10 @@ export default async function AdminStudentsPage() {
   });
 
   return (
-    <StudentsAdminClient students={rows} residentialAreas={residentialAreas} />
+    <StudentsAdminClient
+      students={rows}
+      residentialAreas={residentialAreas}
+      initialQuery={q}
+    />
   );
 }

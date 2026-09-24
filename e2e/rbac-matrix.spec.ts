@@ -31,6 +31,7 @@ const ROUTES: ProtectedRoute[] = [
   { path: "/staff/kalender", allowedRoles: ["STAFF", "ADMIN"] },
   { path: "/staff/statistiken", allowedRoles: ["STAFF", "ADMIN"] },
   { path: "/staff/wochenbericht", allowedRoles: ["STAFF", "ADMIN"] },
+  { path: "/staff/suche", allowedRoles: ["STAFF", "ADMIN"] },
   { path: "/staff/nachrichten", allowedRoles: ["STAFF", "ADMIN"] },
   { path: "/staff/benachrichtigungen", allowedRoles: ["STAFF", "ADMIN"] },
   // Admin
@@ -41,6 +42,7 @@ const ROUTES: ProtectedRoute[] = [
   { path: "/admin/kalender", allowedRoles: ["ADMIN"] },
   { path: "/admin/statistiken", allowedRoles: ["ADMIN"] },
   { path: "/admin/wochenbericht", allowedRoles: ["ADMIN"] },
+  { path: "/admin/suche", allowedRoles: ["ADMIN"] },
   { path: "/admin/nachrichten", allowedRoles: ["ADMIN"] },
   { path: "/admin/benachrichtigungen", allowedRoles: ["ADMIN"] },
   { path: "/admin/audit", allowedRoles: ["ADMIN"] },

@@ -10,6 +10,7 @@ import {
 } from "@/components/admin/user-form-sheet";
 import { UserRowActions } from "@/components/admin/user-row-actions";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 export interface StaffRow extends EditingUser {
   active: boolean;
@@ -21,15 +22,31 @@ interface StaffAdminClientProps {
   staff: StaffRow[];
   residentialAreas: ResidentialAreaOption[];
   currentUserId: string;
+  /** Erweiterung "Globale Suche": vorausgefüllt über `/admin/mitarbeiter?q=…`. */
+  initialQuery?: string;
+}
+
+function matchesQuery(member: StaffRow, query: string): boolean {
+  const normalized = query.trim().toLowerCase();
+  if (!normalized) {
+    return true;
+  }
+  return `${member.firstName} ${member.lastName} ${member.email}`
+    .toLowerCase()
+    .includes(normalized);
 }
 
 export function StaffAdminClient({
   staff,
   residentialAreas,
   currentUserId,
+  initialQuery = "",
 }: StaffAdminClientProps) {
   const [sheetOpen, setSheetOpen] = useState(false);
   const [editingStaff, setEditingStaff] = useState<StaffRow | null>(null);
+  const [query, setQuery] = useState(initialQuery);
+
+  const filteredStaff = staff.filter((member) => matchesQuery(member, query));
 
   function openCreate() {
     setEditingStaff(null);
@@ -43,20 +60,33 @@ export function StaffAdminClient({
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex items-center justify-between gap-2">
-        <h1 className="text-xl font-semibold">Mitarbeiter ({staff.length})</h1>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h1 className="text-xl font-semibold">
+          Mitarbeiter ({filteredStaff.length})
+        </h1>
         <Button type="button" onClick={openCreate}>
           Neuer Mitarbeiter
         </Button>
       </div>
 
-      {staff.length === 0 ? (
+      <Input
+        type="search"
+        value={query}
+        onChange={(event) => setQuery(event.target.value)}
+        placeholder="Name oder E-Mail suchen…"
+        aria-label="Mitarbeiter durchsuchen"
+        className="max-w-sm"
+      />
+
+      {filteredStaff.length === 0 ? (
         <p className="text-muted-foreground text-sm">
-          Keine Mitarbeiter angelegt.
+          {staff.length === 0
+            ? "Keine Mitarbeiter angelegt."
+            : "Keine Mitarbeiter gefunden."}
         </p>
       ) : (
         <ul className="flex flex-col gap-2">
-          {staff.map((member) => (
+          {filteredStaff.map((member) => (
             <li
               key={member.id}
               className="flex flex-col gap-3 rounded-2xl border p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between"
