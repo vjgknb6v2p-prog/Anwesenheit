@@ -76,6 +76,8 @@ src/
                        # /profil + gemeinsames layout.tsx mit <BottomNav/>
     login/, passwort-vergessen/, passwort-zuruecksetzen/[token]/  # öffentlich
     offline/           # Offline-Fallback (öffentlich, siehe PUBLIC_PATHS)
+    beurlaubungsschein/[absenceId]/  # Druckansicht (kein Rollen-Layout), Schüler
+                       # nur eigene Abwesenheit, Mitarbeiter/Admin jede
     staff/              # Mitarbeiter (Top-Nav-Layout): page.tsx (Dashboard),
                        # abwesend/, ueberfaellig/, schueler/, schueler/[id]/, historie/,
                        # statistiken/ (nur eigener Wohnbereich), nachrichten/,
@@ -142,7 +144,8 @@ src/
     install-prompt-banner.tsx, service-worker-register.tsx,
     data-export-links.tsx (Eigene-Daten-Export, alle Rollen),
     messages-client.tsx (geteilt über alle 3 Nachrichtenseiten: Inbox,
-    Thread, Compose, Rundruf für Staff/Admin)
+    Thread, Compose, Rundruf für Staff/Admin),
+    beurlaubungsschein-view.tsx (Druckansicht, "use client", window.print())
 next.config.ts         # Security-Header (CSP, HSTS, X-Frame-Options, …)
   auth.ts              # Auth.js v5: Credentials-Provider + Prisma/Argon2
   auth.config.ts       # Edge-taugliche Basis (pages, authorized/jwt/session-Callbacks,
