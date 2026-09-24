@@ -698,3 +698,34 @@ Druckseiten unter diesen Layouts zugutekommt.
 `StatsFilterForm`.** Der Wochenbericht braucht nur den Wohnbereichs-Filter (Zeitraum ist durch die
 Wochen-Navigation fest vorgegeben) — `StatsFilterForm` mit ungenutzten Von/Bis/Granularitäts-Feldern
 wäre hier irreführend gewesen.
+
+## Erweiterung: Globale Suche
+
+**Eine Such-Eingabe in der Top-Nav statt einer separaten Command-Palette.** `/staff/schueler` hatte
+bereits eine Namenssuche, `/admin/schueler` und `/admin/mitarbeiter` dagegen gar keine — beide
+Listen laden vollständig und ungefiltert. Statt jede Liste einzeln nachzurüsten, bekommt die
+Top-Nav von `src/app/staff/layout.tsx`/`src/app/admin/layout.tsx` ein einfaches GET-Suchfeld
+(`<form action="/staff/suche">`/`/admin/suche`), das von jeder Seite aus erreichbar ist — ein
+generischer HTML-Formular-Submit statt einer JS-lastigen Autocomplete-Komponente, konsistent mit
+den übrigen Filterformularen im Projekt.
+
+**Reine Rang-Funktion (`src/domain/search.ts`, `rankSearchResults`) statt reiner DB-Sortierung.**
+Die DB-Abfrage filtert nur grob (`contains`, case-insensitive, über Name/E-Mail/Klasse/Zimmer);
+welcher Treffer zuerst angezeigt wird, ist reine, unit-testbare Logik (exakter Namenstreffer >
+Namens-Präfix > Nachnamen-Präfix > E-Mail-Präfix > Teilstring-Treffer) — ohne Rangfolge würde z. B.
+eine Suche nach "Jonas" einen zufällig sortierten Treffer für "Jonas Klein" nicht zuverlässig ganz
+oben zeigen.
+
+**Admin durchsucht Schüler und Mitarbeiter gemeinsam, Mitarbeiter nur Schüler.** Deckt sich mit der
+Rechte-Matrix: Mitarbeiterverwaltung ist Admin-exklusiv (`MANAGE_USERS`), Mitarbeiter sollen keine
+Trefferliste anderer Mitarbeiter-Konten sehen. `src/lib/search-queries.ts` stellt daher
+`searchStudents()` (beide Rollen) und `searchStaff()` (nur von `/admin/suche` aufgerufen) getrennt
+bereit.
+
+**Treffer auf `/admin/suche` verlinken mit vorausgefülltem `?q=` auf die bestehenden Listen statt
+auf eine neue Detailseite.** Admin hat für Schüler/Mitarbeiter keine eigene Detailseite (Bearbeiten
+läuft über die `UserFormSheet`-Sheets direkt auf `/admin/schueler`/`/admin/mitarbeiter`) — eine
+weitere Detailansicht nur für Suchtreffer hätte Bearbeiten dupliziert. Beide Listen-Client-
+Komponenten (`StudentsAdminClient`, `StaffAdminClient`) bekamen dafür einen clientseitigen
+`initialQuery`-Filter (die Daten waren ohnehin schon vollständig geladen) statt eines Server-
+Rundtrips.

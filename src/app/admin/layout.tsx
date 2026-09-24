@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { logoutAction } from "@/actions/auth";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { getSessionUser } from "@/lib/authz";
 import { db } from "@/lib/db";
 
@@ -61,7 +62,19 @@ export default async function AdminLayout({
               )}
             </Link>
           ))}
-          <form action={logoutAction} className="ml-auto">
+          <form
+            action="/admin/suche"
+            className="ml-auto flex items-center gap-1"
+          >
+            <Input
+              type="search"
+              name="q"
+              placeholder="Suche…"
+              aria-label="Globale Suche"
+              className="h-9 w-40"
+            />
+          </form>
+          <form action={logoutAction}>
             <Button type="submit" variant="outline" size="sm">
               Abmelden
             </Button>

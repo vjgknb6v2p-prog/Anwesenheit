@@ -7,8 +7,13 @@ export const metadata: Metadata = {
   title: "Mitarbeiter verwalten – CheckIn",
 };
 
-export default async function AdminStaffPage() {
+export default async function AdminStaffPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ q?: string }>;
+}) {
   const admin = await requireRole("ADMIN");
+  const { q } = await searchParams;
 
   const [staff, residentialAreas] = await Promise.all([
     db.user.findMany({
@@ -37,6 +42,7 @@ export default async function AdminStaffPage() {
       staff={rows}
       residentialAreas={residentialAreas}
       currentUserId={admin.id}
+      initialQuery={q}
     />
   );
 }

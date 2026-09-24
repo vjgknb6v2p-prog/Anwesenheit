@@ -9,6 +9,7 @@ import {
 } from "@/components/admin/user-form-sheet";
 import { UserRowActions } from "@/components/admin/user-row-actions";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import type { StudentStatus } from "@/domain/status";
 
 export interface StudentRow extends EditingUser {
@@ -20,14 +21,38 @@ export interface StudentRow extends EditingUser {
 interface StudentsAdminClientProps {
   students: StudentRow[];
   residentialAreas: ResidentialAreaOption[];
+  /** Erweiterung "Globale Suche": vorausgefüllt über `/admin/schueler?q=…`. */
+  initialQuery?: string;
+}
+
+function matchesQuery(student: StudentRow, query: string): boolean {
+  const normalized = query.trim().toLowerCase();
+  if (!normalized) {
+    return true;
+  }
+  return [
+    `${student.firstName} ${student.lastName}`,
+    student.email,
+    student.schoolClass ?? "",
+    student.room ?? "",
+  ]
+    .join(" ")
+    .toLowerCase()
+    .includes(normalized);
 }
 
 export function StudentsAdminClient({
   students,
   residentialAreas,
+  initialQuery = "",
 }: StudentsAdminClientProps) {
   const [sheetOpen, setSheetOpen] = useState(false);
   const [editingStudent, setEditingStudent] = useState<StudentRow | null>(null);
+  const [query, setQuery] = useState(initialQuery);
+
+  const filteredStudents = students.filter((student) =>
+    matchesQuery(student, query),
+  );
 
   function openCreate() {
     setEditingStudent(null);
@@ -41,18 +66,33 @@ export function StudentsAdminClient({
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex items-center justify-between gap-2">
-        <h1 className="text-xl font-semibold">Schüler ({students.length})</h1>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h1 className="text-xl font-semibold">
+          Schüler ({filteredStudents.length})
+        </h1>
         <Button type="button" onClick={openCreate}>
           Neuer Schüler
         </Button>
       </div>
 
-      {students.length === 0 ? (
-        <p className="text-muted-foreground text-sm">Keine Schüler angelegt.</p>
+      <Input
+        type="search"
+        value={query}
+        onChange={(event) => setQuery(event.target.value)}
+        placeholder="Name, E-Mail, Klasse oder Zimmer suchen…"
+        aria-label="Schüler durchsuchen"
+        className="max-w-sm"
+      />
+
+      {filteredStudents.length === 0 ? (
+        <p className="text-muted-foreground text-sm">
+          {students.length === 0
+            ? "Keine Schüler angelegt."
+            : "Keine Schüler gefunden."}
+        </p>
       ) : (
         <ul className="flex flex-col gap-2">
-          {students.map((student) => (
+          {filteredStudents.map((student) => (
             <li
               key={student.id}
               className="flex flex-col gap-3 rounded-2xl border p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between"

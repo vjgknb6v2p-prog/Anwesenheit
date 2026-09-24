@@ -78,15 +78,17 @@ src/
     offline/           # Offline-Fallback (öffentlich, siehe PUBLIC_PATHS)
     beurlaubungsschein/[absenceId]/  # Druckansicht (kein Rollen-Layout), Schüler
                        # nur eigene Abwesenheit, Mitarbeiter/Admin jede
-    staff/              # Mitarbeiter (Top-Nav-Layout, print:hidden beim Drucken):
-                       # page.tsx (Dashboard), abwesend/, ueberfaellig/, schueler/,
-                       # schueler/[id]/, historie/, statistiken/ (nur eigener
-                       # Wohnbereich), wochenbericht/ (nur eigener Wohnbereich),
+    staff/              # Mitarbeiter (Top-Nav-Layout mit globaler Such-Eingabe,
+                       # print:hidden beim Drucken): page.tsx (Dashboard),
+                       # abwesend/, ueberfaellig/, schueler/, schueler/[id]/,
+                       # historie/, statistiken/ (nur eigener Wohnbereich),
+                       # wochenbericht/ (nur eigener Wohnbereich), suche/,
                        # nachrichten/, benachrichtigungen/
-    admin/             # Admin (Top-Nav-Layout, print:hidden beim Drucken):
-                       # page.tsx (Live-Übersicht, SSE), schueler/, mitarbeiter/,
-                       # abwesenheiten/, statistiken/, wochenbericht/,
-                       # nachrichten/, benachrichtigungen/, audit/, wohnbereiche/,
+    admin/             # Admin (Top-Nav-Layout mit globaler Such-Eingabe,
+                       # print:hidden beim Drucken): page.tsx (Live-Übersicht,
+                       # SSE), schueler/, mitarbeiter/, abwesenheiten/,
+                       # statistiken/, wochenbericht/, suche/, nachrichten/,
+                       # benachrichtigungen/, audit/, wohnbereiche/,
                        # einstellungen/
     api/auth/[...nextauth]/route.ts
     api/v1/stream/route.ts  # SSE für Admin-Live-Übersicht (serverseitiges DB-Polling)
@@ -116,7 +118,8 @@ src/
                        # calendar.ts (Kalender-Gruppierung pro Monat), stats-extended.ts
                        # (Heatmap Wochentag×Uhrzeit, Ziel-Leaderboard, Trendvergleich),
                        # group-actions.ts (Eligibility-Filter für Gruppen-Sammelaktionen),
-                       # week.ts (Montag–Sonntag-Wochengrenzen für den Wochenbericht)
+                       # week.ts (Montag–Sonntag-Wochengrenzen für den Wochenbericht),
+                       # search.ts (Rangfolge für die globale Suche)
   lib/                 # Querschnitt: authz.ts (inkl. requireApiRole für Route Handler),
                        # db.ts, password.ts, roles.ts, tokens.ts, audit.ts, logger.ts,
                        # settings.ts (inkl. dataRetentionMonths), time.ts
@@ -129,7 +132,8 @@ src/
                        # (Konversationen/Thread/Empfängerliste), calendar-queries.ts
                        # (Abwesenheiten pro Kalendermonat), wochenbericht-queries.ts
                        # (Wochenbericht-Aggregation + Druckansicht-Formatierung),
-                       # validation/ (Zod-Schemas, u. a. admin.ts, push.ts, messages.ts)
+                       # search-queries.ts (Schüler-/Mitarbeitersuche), validation/
+                       # (Zod-Schemas, u. a. admin.ts, push.ts, messages.ts)
   components/
     ui/                # Minimal selbst geschriebene UI-Primitive (Button, Input, Label,
                        # Textarea, Sheet) im shadcn/ui-Stil (components.json vorbereitet,
