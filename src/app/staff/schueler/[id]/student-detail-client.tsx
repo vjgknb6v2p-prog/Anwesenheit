@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { AbsenceCorrectionSheet } from "@/components/absence-correction-sheet";
 import { CancelAbsenceButton } from "@/components/cancel-absence-button";
 import { CheckInButton } from "@/components/check-in-button";
@@ -134,6 +135,13 @@ export function StudentDetailClient({
               Bearbeiten
             </Button>
             <CancelAbsenceButton absenceId={activeAbsence.id} />
+            <Link
+              href={`/beurlaubungsschein/${activeAbsence.id}`}
+              target="_blank"
+              className="border-input bg-background hover:bg-accent inline-flex h-11 items-center justify-center rounded-2xl border px-4 py-2 text-sm font-medium"
+            >
+              Beurlaubungsschein
+            </Link>
           </div>
         </section>
       )}
@@ -187,14 +195,25 @@ export function StudentDetailClient({
                         : `Dauer: ${formatDuration(durationMs)}`}
                     </p>
                   </div>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setCorrectingId(entry.id)}
-                  >
-                    Bearbeiten
-                  </Button>
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCorrectingId(entry.id)}
+                    >
+                      Bearbeiten
+                    </Button>
+                    {entry.status !== "CANCELLED" && (
+                      <Link
+                        href={`/beurlaubungsschein/${entry.id}`}
+                        target="_blank"
+                        className="border-input bg-background hover:bg-accent inline-flex h-9 items-center justify-center rounded-2xl border px-3 text-sm font-medium"
+                      >
+                        Beurlaubungsschein
+                      </Link>
+                    )}
+                  </div>
                 </li>
               );
             })}

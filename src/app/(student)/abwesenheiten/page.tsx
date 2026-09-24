@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { computeDurationMs, formatDuration } from "@/domain/duration";
 import { deriveStatus } from "@/domain/status";
 import { db } from "@/lib/db";
@@ -93,6 +94,15 @@ export default async function HistoryPage() {
                   <p className="text-muted-foreground text-sm italic">
                     „{absence.note}“
                   </p>
+                )}
+                {absence.status !== "CANCELLED" && (
+                  <Link
+                    href={`/beurlaubungsschein/${absence.id}`}
+                    target="_blank"
+                    className="text-status-info mt-1 text-sm underline-offset-4 hover:underline"
+                  >
+                    Beurlaubungsschein
+                  </Link>
                 )}
               </li>
             );

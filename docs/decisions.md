@@ -645,3 +645,26 @@ anwesende (für den Gruppen-Ausgang) als auch abwesende Schüler (für die Grupp
 kann. Die bisherige Server-Komponente wurde dafür in eine Client-Komponente
 (`src/components/staff/group-actions-panel.tsx`) überführt, da die Auswahl clientseitigen State
 braucht.
+
+## Erweiterung: Beurlaubungsschein-PDF
+
+**`window.print()` auf einer eigenständigen Druckseite statt einer PDF-Bibliothek.** Die
+Stack-Tabelle in `CLAUDE.md` sieht kein PDF-Package vor. Eine Bibliothek wie `@react-pdf/renderer`
+oder `pdfkit` wäre eine zusätzliche, im Projekt bislang unnötige Abhängigkeit (eigenes Layout-
+Modell statt der bestehenden Tailwind-Klassen, zusätzliche Bundle-Größe) — jeder Zielbrowser
+(Tablet/Desktop bei Mitarbeitern und Admins, siehe PROMPT.md Abschnitt 1) unterstützt "Drucken →
+Als PDF speichern" nativ. `src/app/beurlaubungsschein/[absenceId]/page.tsx` ist daher eine
+eigenständige, druckoptimierte Seite (`print:`-Tailwind-Varianten blenden Bedienelemente beim
+Drucken aus) statt eines serverseitig erzeugten PDF-Downloads.
+
+**Route liegt außerhalb aller Rollen-Layouts.** `/beurlaubungsschein/[absenceId]` ist bewusst kein
+Kind von `(student)/`, `staff/` oder `admin/`, damit beim Drucken nicht die jeweilige Bottom-/
+Top-Navigation mit ausgedruckt wird — die Seite nutzt nur das minimale Root-Layout.
+
+**Zugriff: Schüler nur auf die eigene Abwesenheit, Mitarbeiter/Admin auf jede.** Analog zur
+bestehenden Korrektur-Berechtigung (`CORRECT_OR_CANCEL_ABSENCE`, nicht wohnbereichs-eingeschränkt)
+dürfen Mitarbeiter und Admin den Schein jedes Schülers öffnen; ein Schüler, der die ID einer
+fremden Abwesenheit aufruft, wird kontrolliert auf die eigene Startseite umgeleitet (Abschnitt 3.8:
+kein Datenleck über eine eigentlich verbotene Seite). Stornierte Abwesenheiten zeigen den Schein
+weiterhin an (Nachvollziehbarkeit), aber mit einem deutlichen Ungültigkeits-Hinweis statt ihn ganz
+zu verbergen.
