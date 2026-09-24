@@ -526,3 +526,17 @@ wenn `process.env.NODE_ENV !== "production"` — Produktion bleibt unverändert 
 Entwicklung funktioniert wieder. Verifiziert per Playwright-Login-Test gegen `next dev` (kein
 CSP-Fehler mehr, landet korrekt auf `/admin`) sowie die vollständige E2E-Suite gegen `pnpm start`
 (weiterhin 22/22 grün, mehrfach stabil).
+
+**`turbopack.root` explizit in `next.config.ts` gesetzt.** Der eigentliche Auslöser des
+Redirect-Loops (nicht die eval-CSP, siehe Eintrag oben) war eine falsche Root-Erkennung durch
+Next.js/Turbopack: Liegt zufällig eine weitere `package-lock.json`/`pnpm-lock.yaml` in einem
+Elternverzeichnis des Projekts (z. B. `C:\Users\<name>\package-lock.json` auf Windows), wählt
+Next.js dieses Elternverzeichnis als Projekt-Root ("multiple lockfiles"-Warnung beim Start).
+Dadurch werden `.env`/`.env.local` am falschen Ort gesucht, `AUTH_SECRET` bleibt leer, Auth.js
+wirft serverseitig `MissingSecret`, und jeder Login endet in einer Redirect-Schleife zwischen
+`/login` und dem Rollen-Startbereich — ohne jede sichtbare Fehlermeldung im Formular selbst
+(nur im Terminal des Dev-Servers sichtbar). Behoben durch `turbopack: { root: process.cwd() }`
+in `next.config.ts` — macht die Root-Erkennung deterministisch unabhängig davon, was sonst auf
+der Festplatte liegt. `process.cwd()` statt `__dirname`, da `next.config.ts` durch
+`"type": "module"` in `package.json` als ESM geladen wird (`__dirname` dort nicht verfügbar) und
+`pnpm dev`/`build`/`start` ohnehin immer aus dem Projektverzeichnis heraus aufgerufen werden.
