@@ -10,6 +10,7 @@ const NAV_ITEMS = [
   { href: "/admin/mitarbeiter", label: "Mitarbeiter" },
   { href: "/admin/abwesenheiten", label: "Abwesenheiten" },
   { href: "/admin/statistiken", label: "Statistiken" },
+  { href: "/admin/nachrichten", label: "Nachrichten" },
   { href: "/admin/benachrichtigungen", label: "Benachrichtigungen" },
   { href: "/admin/audit", label: "Audit-Log" },
   { href: "/admin/wohnbereiche", label: "Wohnbereiche" },
@@ -28,11 +29,12 @@ export default async function AdminLayout({
   // `getSessionUser()` statt `requireRole()`: nur für die Badge-Zahl
   // (Abschnitt 8) — jede Seite prüft ihren Zugriff selbst (Abschnitt 5).
   const user = await getSessionUser();
-  const unreadCount = user
-    ? await db.notification.count({
-        where: { userId: user.id, readAt: null },
-      })
-    : 0;
+  const [unreadCount, unreadMessages] = user
+    ? await Promise.all([
+        db.notification.count({ where: { userId: user.id, readAt: null } }),
+        db.message.count({ where: { recipientId: user.id, readAt: null } }),
+      ])
+    : [0, 0];
 
   return (
     <div className="min-h-screen">
@@ -48,6 +50,11 @@ export default async function AdminLayout({
               {item.href === "/admin/benachrichtigungen" && unreadCount > 0 && (
                 <span className="bg-status-absent text-status-absent-foreground ml-1.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[10px] font-medium">
                   {unreadCount > 9 ? "9+" : unreadCount}
+                </span>
+              )}
+              {item.href === "/admin/nachrichten" && unreadMessages > 0 && (
+                <span className="bg-status-absent text-status-absent-foreground ml-1.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[10px] font-medium">
+                  {unreadMessages > 9 ? "9+" : unreadMessages}
                 </span>
               )}
             </Link>

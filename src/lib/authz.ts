@@ -91,7 +91,9 @@ export type Action =
   | "MANAGE_ROLES_AND_PASSWORDS"
   | "VIEW_STATISTICS"
   | "VIEW_AUDIT_LOG"
-  | "MANAGE_SETTINGS_AND_AREAS";
+  | "MANAGE_SETTINGS_AND_AREAS"
+  | "SEND_MESSAGE"
+  | "SEND_BROADCAST";
 
 const PERMISSIONS: Record<Action, ReadonlySet<Role>> = {
   VIEW_OWN_STATUS: new Set(["STUDENT", "STAFF", "ADMIN"]),
@@ -108,6 +110,8 @@ const PERMISSIONS: Record<Action, ReadonlySet<Role>> = {
   VIEW_STATISTICS: new Set(["STAFF", "ADMIN"]),
   VIEW_AUDIT_LOG: new Set(["ADMIN"]),
   MANAGE_SETTINGS_AND_AREAS: new Set(["ADMIN"]),
+  SEND_MESSAGE: new Set(["STUDENT", "STAFF", "ADMIN"]),
+  SEND_BROADCAST: new Set(["STAFF", "ADMIN"]),
 };
 
 export function can(role: Role, action: Action): boolean {

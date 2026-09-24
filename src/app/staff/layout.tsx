@@ -11,6 +11,7 @@ const NAV_ITEMS = [
   { href: "/staff/schueler", label: "Schüler" },
   { href: "/staff/historie", label: "Historie" },
   { href: "/staff/statistiken", label: "Statistiken" },
+  { href: "/staff/nachrichten", label: "Nachrichten" },
   { href: "/staff/benachrichtigungen", label: "Benachrichtigungen" },
 ] as const;
 
@@ -26,11 +27,12 @@ export default async function StaffLayout({
   // `getSessionUser()` statt `requireRole()`: nur für die Badge-Zahl
   // (Abschnitt 8) — jede Seite prüft ihren Zugriff selbst (Abschnitt 5).
   const user = await getSessionUser();
-  const unreadCount = user
-    ? await db.notification.count({
-        where: { userId: user.id, readAt: null },
-      })
-    : 0;
+  const [unreadCount, unreadMessages] = user
+    ? await Promise.all([
+        db.notification.count({ where: { userId: user.id, readAt: null } }),
+        db.message.count({ where: { recipientId: user.id, readAt: null } }),
+      ])
+    : [0, 0];
 
   return (
     <div className="min-h-screen">
@@ -46,6 +48,11 @@ export default async function StaffLayout({
               {item.href === "/staff/benachrichtigungen" && unreadCount > 0 && (
                 <span className="bg-status-absent text-status-absent-foreground ml-1.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[10px] font-medium">
                   {unreadCount > 9 ? "9+" : unreadCount}
+                </span>
+              )}
+              {item.href === "/staff/nachrichten" && unreadMessages > 0 && (
+                <span className="bg-status-absent text-status-absent-foreground ml-1.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[10px] font-medium">
+                  {unreadMessages > 9 ? "9+" : unreadMessages}
                 </span>
               )}
             </Link>

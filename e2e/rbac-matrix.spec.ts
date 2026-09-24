@@ -19,6 +19,7 @@ const ROUTES: ProtectedRoute[] = [
   // Schüler
   { path: "/", allowedRoles: ["STUDENT"] },
   { path: "/abwesenheiten", allowedRoles: ["STUDENT"] },
+  { path: "/nachrichten", allowedRoles: ["STUDENT"] },
   { path: "/benachrichtigungen", allowedRoles: ["STUDENT"] },
   { path: "/profil", allowedRoles: ["STUDENT"] },
   // Mitarbeiter (Admin hat laut Rechte-Matrix überall denselben Zugriff)
@@ -28,6 +29,7 @@ const ROUTES: ProtectedRoute[] = [
   { path: "/staff/schueler", allowedRoles: ["STAFF", "ADMIN"] },
   { path: "/staff/historie", allowedRoles: ["STAFF", "ADMIN"] },
   { path: "/staff/statistiken", allowedRoles: ["STAFF", "ADMIN"] },
+  { path: "/staff/nachrichten", allowedRoles: ["STAFF", "ADMIN"] },
   { path: "/staff/benachrichtigungen", allowedRoles: ["STAFF", "ADMIN"] },
   // Admin
   { path: "/admin", allowedRoles: ["ADMIN"] },
@@ -35,6 +37,7 @@ const ROUTES: ProtectedRoute[] = [
   { path: "/admin/mitarbeiter", allowedRoles: ["ADMIN"] },
   { path: "/admin/abwesenheiten", allowedRoles: ["ADMIN"] },
   { path: "/admin/statistiken", allowedRoles: ["ADMIN"] },
+  { path: "/admin/nachrichten", allowedRoles: ["ADMIN"] },
   { path: "/admin/benachrichtigungen", allowedRoles: ["ADMIN"] },
   { path: "/admin/audit", allowedRoles: ["ADMIN"] },
   { path: "/admin/wohnbereiche", allowedRoles: ["ADMIN"] },

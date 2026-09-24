@@ -61,6 +61,8 @@ model User {
   notifications       Notification[]
   pushSubscriptions   PushSubscription[]
   passwordResetTokens PasswordResetToken[]
+  sentMessages        Message[]             @relation("SentMessages")
+  receivedMessages    Message[]             @relation("ReceivedMessages")
 
   @@index([residentialAreaId])
   @@map("users")
@@ -115,6 +117,29 @@ model Extension {
 
   @@index([absenceId])
   @@map("extensions")
+}
+
+/// Direktnachrichten zwischen Nutzern (Feature "Nachrichten"). Ein
+/// Rundruf/Notfall-Broadcast (Mitarbeiter/Admin an alle aktuell abwesenden/
+/// überfälligen Schüler) erzeugt bewusst eine Zeile pro Empfänger (statt
+/// eines gemeinsamen Datensatzes mit Empfängerliste), damit Lesestatus pro
+/// Empfänger unabhängig verfolgt werden kann — `broadcastGroupId` verknüpft
+/// die zusammengehörigen Zeilen für die Anzeige ("Rundruf an 12 Schüler").
+model Message {
+  id               String    @id @default(cuid())
+  sender           User      @relation("SentMessages", fields: [senderId], references: [id])
+  senderId         String    @map("sender_id")
+  recipient        User      @relation("ReceivedMessages", fields: [recipientId], references: [id], onDelete: Cascade)
+  recipientId      String    @map("recipient_id")
+  body             String
+  broadcastGroupId String?   @map("broadcast_group_id")
+  readAt           DateTime? @map("read_at")
+  createdAt        DateTime  @default(now()) @map("created_at")
+
+  @@index([recipientId, readAt])
+  @@index([senderId, recipientId, createdAt])
+  @@index([broadcastGroupId])
+  @@map("messages")
 }
 
 model Notification {
