@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { StatsCharts } from "@/components/stats/stats-charts";
+import { StatsExtendedCharts } from "@/components/stats/stats-extended-charts";
 import { StatsFilterForm } from "@/components/stats/stats-filter-form";
 import { formatDuration } from "@/domain/duration";
 import { requireRole } from "@/lib/authz";
@@ -9,6 +10,7 @@ import {
   buildStatsExportQuery,
   parseStatsPageParams,
 } from "@/lib/stats-params";
+import { getExtendedStatsSummary } from "@/lib/stats-extended-queries";
 import { getStatsSummary } from "@/lib/stats-queries";
 
 export const metadata: Metadata = {
@@ -34,8 +36,9 @@ export default async function AdminStatsPage({
       ? params.residentialAreaId
       : undefined;
 
-  const [summary, residentialAreas] = await Promise.all([
+  const [summary, extendedSummary, residentialAreas] = await Promise.all([
     getStatsSummary({ from, to, granularity, residentialAreaId }),
+    getExtendedStatsSummary({ from, to, residentialAreaId }),
     db.residentialArea.findMany({ orderBy: { name: "asc" } }),
   ]);
 
@@ -72,6 +75,11 @@ export default async function AdminStatsPage({
       </div>
 
       <StatsCharts summary={summary} granularity={granularity} />
+      <StatsExtendedCharts
+        heatmap={extendedSummary.heatmap}
+        byDestination={extendedSummary.byDestination}
+        trend={extendedSummary.trend}
+      />
     </div>
   );
 }
