@@ -6,7 +6,8 @@ const SIZE = 512;
 
 // Siehe src/app/icon-192.png/route.tsx — identisches Motiv in größerer
 // Auflösung (auch als "maskable" Icon im Manifest referenziert, daher der
-// zusätzliche Randabstand durch den kleineren Kreis-Durchmesser).
+// zusätzliche Randabstand durch den kleineren Kreis-Durchmesser). Auch
+// hier: langes Cache-Control, da der Inhalt statisch ist.
 export async function GET() {
   return new ImageResponse(
     <div
@@ -28,6 +29,12 @@ export async function GET() {
         }}
       />
     </div>,
-    { width: SIZE, height: SIZE },
+    {
+      width: SIZE,
+      height: SIZE,
+      headers: {
+        "Cache-Control": "public, max-age=31536000, immutable",
+      },
+    },
   );
 }
