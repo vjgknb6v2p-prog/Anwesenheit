@@ -85,7 +85,7 @@ export function InstallPromptBanner() {
   }
 
   return (
-    <div className="border-status-info flex flex-col gap-2 rounded-2xl border p-4 shadow-sm">
+    <div className="border-status-info animate-in fade-in slide-in-from-top-2 flex flex-col gap-2 rounded-2xl border p-4 shadow-sm duration-300">
       {ios ? (
         <p className="text-sm">
           Für Push-Benachrichtigungen auf dem iPhone: Tippe unten in Safari auf{" "}

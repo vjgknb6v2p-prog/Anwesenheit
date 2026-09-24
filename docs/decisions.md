@@ -729,3 +729,42 @@ weitere Detailansicht nur für Suchtreffer hätte Bearbeiten dupliziert. Beide L
 Komponenten (`StudentsAdminClient`, `StaffAdminClient`) bekamen dafür einen clientseitigen
 `initialQuery`-Filter (die Daten waren ohnehin schon vollständig geladen) statt eines Server-
 Rundtrips.
+
+## Erweiterung: Animationen & Mikro-Interaktionen
+
+**Bewusst gezielte, funktionale Mikro-Interaktionen statt einer generischen Seitenübergangs-
+Animation.** Ein globaler Page-Transition-Wrapper (z. B. über die View-Transitions-API) hätte jede
+Route angefasst, ohne einen erkennbaren Nutzen über reine Deko hinaus. Stattdessen wurden gezielt
+Stellen animiert, an denen eine Animation echte Information trägt oder Bedienung fühlbarer macht —
+mit dem bereits installierten `tw-animate-css` (kein neues Package) bzw. Tailwinds eingebauten
+`animate-pulse`/`transition-*`-Utilities.
+
+**Globale Tastreaktion (`active:scale-[0.97]`) auf der gemeinsamen `Button`-Komponente.** Eine
+Änderung an `src/components/ui/button.tsx` wirkt sich automatisch auf jeden Button der App aus
+(Sheets, Formulare, Aktionslisten) — kein Bedarf, jede Aufrufstelle einzeln anzufassen. Die
+frei-stehenden Auswahl-"Pills" in `check-out-sheet.tsx` (Grund/Ziel/Schnellauswahl-Rückkehrzeit)
+sind keine `Button`-Instanzen und bekamen dieselbe `active:scale-95`-Klasse direkt.
+
+**`Sheet` (`src/components/ui/sheet.tsx`) bekommt eine Öffnen-Animation, aber bewusst keine
+Schließen-Animation.** Backdrop und Panel blenden per `tw-animate-css` (`animate-in fade-in
+slide-in-from-bottom-4`) ein. Eine symmetrische Exit-Animation hätte verlangt, das Unmounten bis
+zum Animationsende zu verzögern (`onAnimationEnd`-Handling) — mehr Komplexität und Risiko für
+hängenbleibende Sheets in Testumgebungen, für einen Effekt, der beim schnellen Schließen kaum
+wahrgenommen wird. Sofortiges Schließen bleibt daher wie zuvor.
+
+**Live-Übersicht (`/admin`): kurzes Aufblenden einer Zeile bei Statuswechsel.** `useFlashOnChange()`
+in `src/components/admin/live-overview-client.tsx` vergleicht `row.status` zwischen Renders und
+blendet die Zeile 1,5 s lang ein (`bg-status-info/20`, `transition-colors duration-1000` zum
+Ausklingen) — macht SSE-Live-Updates (Kernfeature dieser Seite) tatsächlich sichtbar, statt dass
+sich eine Tabelle unbemerkt im Hintergrund ändert.
+
+**`StatusBadge`: pulsierender Punkt statt pulsierendem Badge-Hintergrund für ÜBERFÄLLIG.** Ein
+komplett pulsierendes Badge wäre für Mitarbeiter, die die Überfällig-Liste minutenlang im Blick
+behalten, ermüdend/ablenkend. Ein kleiner pulsierender Punkt (`animate-pulse`, `bg-current`) vor
+dem Label ist ein etabliertes "live/dringend"-Signal (vgl. Aufnahme-Indikatoren), ohne den
+Lesefluss des Labels selbst zu stören.
+
+**`BottomNav`: sanfter Farb-Übergang und Icon-Skalierung statt eines springenden Aktiv-Zustands.**
+`transition-colors` auf dem Link und `scale-110` mit `transition-transform` auf dem Icon machen den
+Tab-Wechsel für Schüler fühlbar, ohne die Tab-Bar selbst zu verschieben (kein Layout-Shift). Der
+Badge-Zähler blendet per `tw-animate-css` (`animate-in zoom-in`) ein, wenn er neu erscheint.

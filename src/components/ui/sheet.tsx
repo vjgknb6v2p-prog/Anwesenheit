@@ -48,7 +48,7 @@ export function Sheet({ open, onClose, title, children }: SheetProps) {
   return createPortal(
     <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center">
       <div
-        className="absolute inset-0 bg-black/40"
+        className="animate-in fade-in absolute inset-0 bg-black/40 duration-200"
         onClick={onClose}
         aria-hidden="true"
       />
@@ -56,7 +56,7 @@ export function Sheet({ open, onClose, title, children }: SheetProps) {
         role="dialog"
         aria-modal="true"
         aria-label={title}
-        className="bg-background relative z-10 max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-t-2xl p-6 shadow-lg sm:rounded-2xl"
+        className="animate-in fade-in slide-in-from-bottom-4 sm:zoom-in-95 sm:slide-in-from-bottom-0 bg-background relative z-10 max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-t-2xl p-6 shadow-lg duration-200 sm:rounded-2xl"
         style={{
           paddingBottom: "calc(1.5rem + env(safe-area-inset-bottom))",
         }}

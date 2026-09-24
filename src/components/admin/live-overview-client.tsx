@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getLiveOverviewSnapshotAction } from "@/actions/admin-live";
 import { checkInOtherAction } from "@/actions/staff";
@@ -8,6 +8,7 @@ import { StatusBadge } from "@/components/status-badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { computeDurationMs, formatDuration } from "@/domain/duration";
+import { cn } from "@/lib/utils";
 import {
   ALL_FILTER,
   filterLiveOverviewRows,
@@ -332,6 +333,34 @@ interface RowProps {
   onCheckIn: (absenceId: string) => void;
 }
 
+const STATUS_FLASH_DURATION_MS = 1500;
+
+/**
+ * Erweiterung "Animationen & Mikro-Interaktionen": kurzer Farb-Einblend-
+ * Effekt, wenn sich `value` gegenüber dem letzten Render ändert (z. B. ein
+ * Statuswechsel durch einen SSE-Push) — macht Live-Updates in der Tabelle
+ * sichtbar, ohne die ganze Seite neu zu laden oder aufzublitzen.
+ */
+function useFlashOnChange<T>(value: T): boolean {
+  const [flashing, setFlashing] = useState(false);
+  const previous = useRef(value);
+
+  useEffect(() => {
+    if (previous.current === value) {
+      return;
+    }
+    previous.current = value;
+    setFlashing(true);
+    const timeout = setTimeout(
+      () => setFlashing(false),
+      STATUS_FLASH_DURATION_MS,
+    );
+    return () => clearTimeout(timeout);
+  }, [value]);
+
+  return flashing;
+}
+
 function rowDuration(row: RowProps["row"]): string | null {
   if (!row.checkedOutAt) {
     return null;
@@ -343,11 +372,14 @@ function rowDuration(row: RowProps["row"]): string | null {
 
 function LiveOverviewTableRow({ row, pendingCheckIn, onCheckIn }: RowProps) {
   const duration = rowDuration(row);
+  const flashing = useFlashOnChange(row.status);
   return (
     <tr
-      className={
-        row.status === "UEBERFAELLIG" ? "bg-status-overdue/10" : undefined
-      }
+      className={cn(
+        "transition-colors duration-1000",
+        row.status === "UEBERFAELLIG" && "bg-status-overdue/10",
+        flashing && "bg-status-info/20",
+      )}
     >
       <td className="p-3 font-medium">{row.name}</td>
       <td className="p-3">
@@ -385,11 +417,14 @@ function LiveOverviewTableRow({ row, pendingCheckIn, onCheckIn }: RowProps) {
 
 function LiveOverviewCard({ row, pendingCheckIn, onCheckIn }: RowProps) {
   const duration = rowDuration(row);
+  const flashing = useFlashOnChange(row.status);
   return (
     <li
-      className={`flex flex-col gap-2 rounded-2xl border p-4 shadow-sm ${
-        row.status === "UEBERFAELLIG" ? "bg-status-overdue/10" : ""
-      }`}
+      className={cn(
+        "flex flex-col gap-2 rounded-2xl border p-4 shadow-sm transition-colors duration-1000",
+        row.status === "UEBERFAELLIG" && "bg-status-overdue/10",
+        flashing && "bg-status-info/20",
+      )}
     >
       <div className="flex items-center justify-between gap-2">
         <p className="font-medium">{row.name}</p>

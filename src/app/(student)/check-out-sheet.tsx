@@ -106,7 +106,7 @@ export function CheckOutSheet({
                 type="button"
                 onClick={() => setReason(option)}
                 className={cn(
-                  "min-h-11 rounded-full border px-4 py-2 text-sm",
+                  "min-h-11 rounded-full border px-4 py-2 text-sm transition-[transform,background-color,border-color] duration-150 active:scale-95",
                   reason === option
                     ? "border-primary bg-primary text-primary-foreground"
                     : "border-input",
@@ -139,7 +139,7 @@ export function CheckOutSheet({
                   type="button"
                   onClick={() => setDestination(option)}
                   className={cn(
-                    "min-h-9 rounded-full border px-3 py-1.5 text-xs",
+                    "min-h-9 rounded-full border px-3 py-1.5 text-xs transition-[transform,background-color,border-color] duration-150 active:scale-95",
                     destination === option
                       ? "border-primary bg-primary text-primary-foreground"
                       : "border-input",
@@ -176,7 +176,7 @@ export function CheckOutSheet({
                   setCustomValue("");
                 }}
                 className={cn(
-                  "min-h-11 rounded-full border px-4 py-2 text-sm",
+                  "min-h-11 rounded-full border px-4 py-2 text-sm transition-[transform,background-color,border-color] duration-150 active:scale-95",
                   selectedReturn?.getTime() === option.value.getTime()
                     ? "border-primary bg-primary text-primary-foreground"
                     : "border-input",
