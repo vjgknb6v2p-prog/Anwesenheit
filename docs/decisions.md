@@ -783,3 +783,30 @@ bisherige Prüfung akzeptierte nur `x-cron-secret` (für selbstgehostete Aufrufe
 Vercels eigenes Cron-Feature dadurch abgelehnt. Beide Formen werden jetzt gleichwertig akzeptiert,
 in einer gemeinsamen Funktion statt zweimal dupliziertem Code, um ein zukünftiges Auseinanderlaufen
 der beiden Routen zu vermeiden.
+
+## Performance: `Cache-Control` auf den PWA-Icon-Routen
+
+**Anlass:** Ein `pnpm dev`-Log des Nutzers (lokales Windows) zeigte `GET /icon-192.png` und
+`GET /manifest.webmanifest` bei praktisch jeder Navigation, mit 100–800 ms pro Anfrage. Nachmessen
+mit `pnpm build && pnpm start` (Produktionsmodus) zeigte: `/manifest.webmanifest` ~10–30 ms,
+`/login` (statische Seite) ~5 ms — die im Dev-Log beobachteten Zeiten sind zum überwiegenden Teil
+Turbopack-Dev-Server-Overhead (On-Demand-Kompilierung, HMR-Buchhaltung pro Anfrage), nicht
+repräsentativ für Produktion. Diese Erkenntnis selbst ist keine Code-Änderung, aber wichtig für
+künftige Performance-Diskussionen: **immer gegen den Produktions-Build messen, nie gegen
+`pnpm dev`.**
+
+**Tatsächlicher, produktionsrelevanter Fund:** `icon-192.png`/`icon-512.png`
+(`src/app/icon-192.png/route.tsx`, `icon-512.png/route.tsx`) rendern ihr Bild bei jeder Anfrage neu
+per `next/og`/Satori (~150 ms kalt, ~12 ms warm im Test), obwohl der Inhalt zur Laufzeit nie
+variiert (rein geometrisch, keine Nutzerdaten). Ohne `Cache-Control`-Header lädt der Browser das
+Icon bei jeder Navigation erneut vom Server statt aus dem eigenen Cache. Beide Routen setzen jetzt
+`Cache-Control: public, max-age=31536000, immutable` — der Browser fragt nach dem ersten Laden gar
+nicht mehr nach, und selbst ein erzwungener Refetch bleibt ein reiner Cache-Hit.
+
+**`manifest.ts` bleibt bewusst ohne Cache-Header.** Es ist laut Next.js zwangsläufig dynamisch (liest
+die Session für die rollenabhängigen App-Shortcuts, siehe Erweiterung "PWA-Schnellzugriffe" oben) —
+Next.js liefert dynamische Routen standardmäßig mit `Cache-Control: public, max-age=0,
+must-revalidate` aus, was für personalisierte/sitzungsabhängige Inhalte korrekt ist. Die Messung
+zeigt, dass das in Produktion mit ~10–30 ms ohnehin kein spürbares Problem ist — der Trade-off
+(kein Caching für personalisierte Shortcuts vs. keine Personalisierung) lohnt sich hier nicht,
+zugunsten von Cache-Fähigkeit auf die Personalisierung zu verzichten.
