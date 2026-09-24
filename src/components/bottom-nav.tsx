@@ -73,16 +73,22 @@ export function BottomNav({
             href={href}
             aria-current={active ? "page" : undefined}
             className={cn(
-              "relative flex min-h-11 flex-1 flex-col items-center justify-center gap-1 py-2 text-xs",
+              "relative flex min-h-11 flex-1 flex-col items-center justify-center gap-1 py-2 text-xs transition-colors duration-200",
               active ? "text-primary" : "text-muted-foreground",
             )}
           >
             <span className="relative">
-              <Icon className="h-5 w-5" aria-hidden="true" />
+              <Icon
+                className={cn(
+                  "h-5 w-5 transition-transform duration-200",
+                  active && "scale-110",
+                )}
+                aria-hidden="true"
+              />
               {showBadge && (
                 <span
                   aria-hidden="true"
-                  className="bg-status-absent text-status-absent-foreground absolute -top-1 -right-1.5 flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[10px] font-medium"
+                  className="bg-status-absent text-status-absent-foreground animate-in zoom-in absolute -top-1 -right-1.5 flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[10px] font-medium duration-200"
                 >
                   {count > 9 ? "9+" : count}
                 </span>
