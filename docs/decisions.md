@@ -580,3 +580,38 @@ Dieselbe Vereinfachung wie bei `groupAbsencesByPeriod` (Phase 5): eine mehrtägi
 Konsistent mit der bestehenden Statistik-Logik und einfacher zu lesen als ein "Balken über mehrere
 Tage"-Kalender, der für diese Nutzergruppe (Mitarbeiter, schneller Überblick) keinen Mehrwert
 bietet.
+
+## Erweiterung: Erweiterte Statistik-Grafiken
+
+**Eigene Domänendatei `src/domain/stats-extended.ts` statt Erweiterung von `stats.ts`.**
+`AbsenceStatsInput` (Phase 5) hat viele Call-Sites (Seiten, CSV-Export, Tests); ein zusätzliches
+Pflichtfeld (`destination`) hätte alle davon berührt. Die drei neuen Funktionen
+(`buildWeekdayHourHeatmap`, `countByDestination`, `computeTrend`) bekommen daher eigene, schlanke
+Eingabetypen mit nur den je Funktion nötigen Feldern — dieselbe Konvention wie bereits bei
+`domain/calendar.ts`.
+
+**Heatmap liefert immer alle 7×24 = 168 Zellen, auch mit `count: 0`.** Die UI-Komponente kann so ein
+lückenloses Raster rendern, ohne selbst fehlende Kombinationen aus Wochentag/Stunde auffüllen zu
+müssen. Wie bei den übrigen Statistiken fließen stornierte Abwesenheiten nicht ein.
+
+**Ziel-Leaderboard (`countByDestination`) ist bewusst von `countByReason` getrennt**, obwohl beide
+strukturell identisch sind (Zählen + absteigend sortieren) — unterschiedliche Eingabefelder
+(`destination` vs. `reason`), eine gemeinsame generische Funktion hätte keinen echten Mehrwert
+gegenüber Lesbarkeit gebracht.
+
+**Trendvergleich: `deltaPercent` ist `null`, wenn die Vorperiode 0 war und die aktuelle nicht.**
+Eine Prozentanzeige wie "+∞ %" oder eine sehr große, aus dem Nichts wirkende Zahl wäre irreführend.
+Die Vorperiode ist immer die unmittelbar vorangehende, gleich lange Periode vor dem gewählten
+Zeitraum (z. B. bei "letzte 7 Tage" die 7 Tage davor) — automatisch aus dem bestehenden
+Zeitraumfilter abgeleitet, kein zusätzliches UI-Element nötig.
+
+**Neue Datenzugriffsschicht `src/lib/stats-extended-queries.ts`** statt Erweiterung von
+`getStatsSummary()` — lädt dieselbe Absence-Menge (identischer Zeitraum-/Wohnbereichsfilter) einmal
+zusätzlich mit `destination`, plus einen Count-Query für die Vorperiode. Bewusst getrennt von
+`stats-queries.ts`, um dessen bestehende, von Phase 5 an stabile Signatur nicht anzufassen.
+
+**Heatmap als eigenes CSS-Grid statt Recharts.** Recharts hat keinen nativen Heatmap-Chart-Typ; ein
+Nachbau darüber (z. B. als Scatter mit Custom-Shape) wäre komplexer und weniger zugänglich als ein
+einfaches, mit `color-mix()` eingefärbtes CSS-Grid mit `title`-Tooltips pro Zelle. Trendvergleich
+(häufigste Gründe, Ziel-Leaderboard) nutzt weiterhin Recharts, konsistent mit den bestehenden
+Diagrammen aus Phase 5.

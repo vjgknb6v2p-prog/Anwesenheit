@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { StatsCharts } from "@/components/stats/stats-charts";
+import { StatsExtendedCharts } from "@/components/stats/stats-extended-charts";
 import { StatsFilterForm } from "@/components/stats/stats-filter-form";
 import { formatDuration } from "@/domain/duration";
 import { requireRole } from "@/lib/authz";
@@ -8,6 +9,7 @@ import {
   buildStatsExportQuery,
   parseStatsPageParams,
 } from "@/lib/stats-params";
+import { getExtendedStatsSummary } from "@/lib/stats-extended-queries";
 import { getStatsSummary } from "@/lib/stats-queries";
 
 export const metadata: Metadata = {
@@ -49,12 +51,19 @@ export default async function StaffStatsPage({
     );
   }
 
-  const summary = await getStatsSummary({
-    from,
-    to,
-    granularity,
-    residentialAreaId: dbUser.residentialAreaId,
-  });
+  const [summary, extendedSummary] = await Promise.all([
+    getStatsSummary({
+      from,
+      to,
+      granularity,
+      residentialAreaId: dbUser.residentialAreaId,
+    }),
+    getExtendedStatsSummary({
+      from,
+      to,
+      residentialAreaId: dbUser.residentialAreaId,
+    }),
+  ]);
 
   return (
     <div className="flex flex-col gap-6">
@@ -92,6 +101,11 @@ export default async function StaffStatsPage({
       </div>
 
       <StatsCharts summary={summary} granularity={granularity} />
+      <StatsExtendedCharts
+        heatmap={extendedSummary.heatmap}
+        byDestination={extendedSummary.byDestination}
+        trend={extendedSummary.trend}
+      />
     </div>
   );
 }
