@@ -540,3 +540,30 @@ in `next.config.ts` — macht die Root-Erkennung deterministisch unabhängig dav
 der Festplatte liegt. `process.cwd()` statt `__dirname`, da `next.config.ts` durch
 `"type": "module"` in `package.json` als ESM geladen wird (`__dirname` dort nicht verfügbar) und
 `pnpm dev`/`build`/`start` ohnehin immer aus dem Projektverzeichnis heraus aufgerufen werden.
+
+## Erweiterung: Nachrichten & Notfall-Broadcast
+
+**Schüler dürfen nur an Mitarbeiter/Admin schreiben, nicht untereinander.** Ein unbeaufsichtigter
+Peer-Chat zwischen Schülern über die Verwaltungs-App wäre ein Aufsichts-/Safeguarding-Risiko, das
+über den eigentlichen Zweck der Anwendung (Ausgangsverwaltung) hinausgeht. `canSendMessageTo()` in
+`src/domain/messaging.ts` erzwingt das als reine, unit-getestete Funktion; Mitarbeiter und Admin
+dürfen an jede Rolle schreiben.
+
+**Rundruf (Notfall-Broadcast) erzeugt eine `Message`-Zeile pro Empfänger statt eines gemeinsamen
+Datensatzes mit Empfängerliste.** Damit bleibt der Lesestatus pro Empfänger unabhängig (wie bei
+`Notification`), und die bestehende Konversations-/Thread-Logik funktioniert ohne Sonderfall.
+`broadcastGroupId` (eine pro Rundruf gemeinsame UUID) verknüpft die zusammengehörigen Zeilen nur
+für die Anzeige ("Rundruf"-Kennzeichnung in der UI).
+
+**Rundruf-Zielgruppe: alle Schüler mit einer aktiven Abwesenheit (`status = ACTIVE`), unabhängig
+von `plannedReturnAt`.** Sowohl `ABWESEND` als auch `UEBERFAELLIG` sollen im Notfall erreicht
+werden — die Unterscheidung ist für diesen Zweck irrelevant. Mitarbeiter erreichen dabei nur den
+eigenen Wohnbereich (analog zur bestehenden Wohnbereichs-Einschränkung bei Statistiken), Admin
+alle Wohnbereiche.
+
+**Bottom-Nav der Schüler-Ansicht auf 5 Tabs erweitert, bestehende Glocke von "Nachrichten" auf
+"Hinweise" umbenannt.** Die ursprüngliche Beschriftung "Nachrichten" für die Glocke
+(System-Benachrichtigungen: Erinnerungen, Überfälligkeit) kollidiert semantisch mit der neuen
+echten Nachrichtenfunktion zwischen Personen. Die Glocke heißt jetzt "Hinweise", das neue
+Sprechblasen-Symbol "Nachrichten" — inhaltlich passender und eindeutig unterscheidbar. Zwei
+getrennte Ungelesen-Zähler (`Notification` vs. `Message`), keine Vermischung.

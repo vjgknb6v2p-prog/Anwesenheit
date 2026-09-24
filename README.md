@@ -21,6 +21,11 @@ und die Domänenlogik in [`CLAUDE.md`](./CLAUDE.md).
 > Phase 4 vollständiger Admin-Bereich (Live-Übersicht, Benutzerverwaltung, Wohnbereiche,
 > Einstellungen, Audit-Log).
 
+> **Erweiterungen nach Phase 8:** Direktnachrichten zwischen Nutzern und ein Notfall-Rundruf an
+> alle aktuell abwesenden/überfälligen Schüler (`/nachrichten`, `/staff/nachrichten`,
+> `/admin/nachrichten` — siehe `docs/decisions.md` Abschnitt "Nachrichten & Notfall-Broadcast").
+> Weitere Erweiterungen folgen fortlaufend.
+
 ## Voraussetzungen
 
 - Node.js 22+

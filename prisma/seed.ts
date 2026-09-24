@@ -101,6 +101,7 @@ async function main() {
   console.log("Lösche vorhandene Daten …");
   await db.auditLog.deleteMany();
   await db.notification.deleteMany();
+  await db.message.deleteMany();
   await db.pushSubscription.deleteMany();
   await db.extension.deleteMany();
   await db.absence.deleteMany();

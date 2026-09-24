@@ -78,10 +78,12 @@ src/
     offline/           # Offline-Fallback (öffentlich, siehe PUBLIC_PATHS)
     staff/              # Mitarbeiter (Top-Nav-Layout): page.tsx (Dashboard),
                        # abwesend/, ueberfaellig/, schueler/, schueler/[id]/, historie/,
-                       # statistiken/ (nur eigener Wohnbereich), benachrichtigungen/
+                       # statistiken/ (nur eigener Wohnbereich), nachrichten/,
+                       # benachrichtigungen/
     admin/             # Admin (Top-Nav-Layout): page.tsx (Live-Übersicht, SSE),
                        # schueler/, mitarbeiter/, abwesenheiten/, statistiken/,
-                       # benachrichtigungen/, audit/, wohnbereiche/, einstellungen/
+                       # nachrichten/, benachrichtigungen/, audit/, wohnbereiche/,
+                       # einstellungen/
     api/auth/[...nextauth]/route.ts
     api/v1/stream/route.ts  # SSE für Admin-Live-Übersicht (serverseitiges DB-Polling)
     api/v1/export/statistiken/route.ts  # CSV-Export der Statistiken
@@ -90,7 +92,8 @@ src/
     api/v1/cron/cleanup/route.ts  # Hard-Delete-Job (Aufbewahrungsfrist, CRON_SECRET)
     manifest.ts, icon-192.png/route.tsx, icon-512.png/route.tsx  # PWA (next/og ImageResponse)
   actions/             # Server Actions: auth.ts (Login/Logout/Reset), absences.ts
-                       # (Aus-/Einchecken/Verlängern), notifications.ts, staff.ts
+                       # (Aus-/Einchecken/Verlängern), notifications.ts, messages.ts
+                       # (Direktnachricht senden/lesen, Notfall-Broadcast), staff.ts
                        # (Korrektur/Stornierung/Fremd-Einchecken/Verlängerungsfreigabe),
                        # admin-users.ts (anlegen/bearbeiten/aktivieren/löschen/Rolle/
                        # Passwort-Reset), admin-settings.ts (Wohnbereiche/Einstellungen),
@@ -104,7 +107,8 @@ src/
                        # verspätete Rückkehren, häufigste Gründe, Ausgänge pro Schüler),
                        # notification-type.ts, notification-rules.ts (Erinnerungs-/
                        # Überfälligkeits-/Sammelmeldungs-Regeln für den Cron-Tick),
-                       # retention.ts (Hard-Delete-Kandidaten-Regel)
+                       # retention.ts (Hard-Delete-Kandidaten-Regel), messaging.ts
+                       # (canSendMessageTo-Regel, Konversations-Zusammenfassung)
   lib/                 # Querschnitt: authz.ts (inkl. requireApiRole für Route Handler),
                        # db.ts, password.ts, roles.ts, tokens.ts, audit.ts, logger.ts,
                        # settings.ts (inkl. dataRetentionMonths), time.ts
@@ -112,8 +116,9 @@ src/
                        # (KPI-/Live-Tabellen-Snapshot), stats-queries.ts (DB-Abfrage +
                        # Aggregation für Statistiken), stats-params.ts (Zeitraum-/
                        # Filter-Parsing aus searchParams), push.ts (Web-Push-Versand,
-                       # best effort), mail/mailer.ts, validation/ (Zod-Schemas,
-                       # u. a. admin.ts, push.ts)
+                       # best effort), mail/mailer.ts, messages-queries.ts
+                       # (Konversationen/Thread/Empfängerliste), validation/
+                       # (Zod-Schemas, u. a. admin.ts, push.ts, messages.ts)
   components/
     ui/                # Minimal selbst geschriebene UI-Primitive (Button, Input, Label,
                        # Textarea, Sheet) im shadcn/ui-Stil (components.json vorbereitet,
@@ -126,7 +131,9 @@ src/
     extension-decision-buttons.tsx, notifications-list.tsx (geteilt über alle
     3 Benachrichtigungsseiten), push-subscription-toggle.tsx,
     install-prompt-banner.tsx, service-worker-register.tsx,
-    data-export-links.tsx (Eigene-Daten-Export, alle Rollen)
+    data-export-links.tsx (Eigene-Daten-Export, alle Rollen),
+    messages-client.tsx (geteilt über alle 3 Nachrichtenseiten: Inbox,
+    Thread, Compose, Rundruf für Staff/Admin)
 next.config.ts         # Security-Header (CSP, HSTS, X-Frame-Options, …)
   auth.ts              # Auth.js v5: Credentials-Provider + Prisma/Argon2
   auth.config.ts       # Edge-taugliche Basis (pages, authorized/jwt/session-Callbacks,
