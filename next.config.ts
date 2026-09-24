@@ -23,6 +23,18 @@ import type { NextConfig } from "next";
  * Redirect-Loop durch kaputten Client-Router-Code). Betrifft nur den
  * Dev-Server — `next build`/`next start` brauchen kein `eval()` und bleiben
  * ohne `'unsafe-eval'` in Produktion.
+ *
+ * `turbopack.root` explizit gesetzt: Ohne diese Angabe rät Next.js/Turbopack
+ * den Projekt-Root anhand vorhandener Lockfiles — liegt (z. B. auf Windows)
+ * zufällig eine weitere `package-lock.json`/`pnpm-lock.yaml` in einem
+ * Elternverzeichnis von `Anwesenheit`, wählt Next.js versehentlich *dieses*
+ * Elternverzeichnis als Root ("multiple lockfiles" -Warnung beim Start).
+ * Folge: `.env`/`.env.local` werden am falschen Ort gesucht,
+ * `AUTH_SECRET` bleibt leer, Auth.js wirft `MissingSecret`, und jeder Login
+ * endet in einer Redirect-Schleife zwischen `/login` und dem Rollen-
+ * Startbereich — ohne sichtbare Fehlermeldung im Formular. `process.cwd()`
+ * ist hier zuverlässig, da `pnpm dev`/`pnpm build`/`pnpm start` immer aus
+ * dem Projektverzeichnis heraus aufgerufen werden.
  */
 const IS_PRODUCTION = process.env.NODE_ENV === "production";
 
@@ -42,6 +54,9 @@ const CSP_DIRECTIVES = [
 ].join("; ");
 
 const nextConfig: NextConfig = {
+  turbopack: {
+    root: process.cwd(),
+  },
   async headers() {
     return [
       {
