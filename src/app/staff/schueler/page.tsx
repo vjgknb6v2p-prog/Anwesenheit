@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
-import Link from "next/link";
-import { StatusBadge } from "@/components/status-badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { GroupActionsPanel } from "@/components/staff/group-actions-panel";
 import { deriveStatus } from "@/domain/status";
 import { requireRole } from "@/lib/authz";
 import { db } from "@/lib/db";
@@ -41,6 +40,26 @@ export default async function StaffStudentsPage({
 
   const now = new Date();
 
+  const studentRows = students.map((student) => {
+    const activeAbsence = student.absences[0];
+    return {
+      id: student.id,
+      firstName: student.firstName,
+      lastName: student.lastName,
+      schoolClass: student.schoolClass,
+      residentialAreaName: student.residentialArea?.name ?? null,
+      status: deriveStatus(
+        activeAbsence
+          ? {
+              status: "ACTIVE" as const,
+              plannedReturnAt: activeAbsence.plannedReturnAt,
+            }
+          : null,
+        now,
+      ),
+    };
+  });
+
   return (
     <div className="flex flex-col gap-4">
       <h1 className="text-xl font-semibold">Schüler ({students.length})</h1>
@@ -58,39 +77,7 @@ export default async function StaffStudentsPage({
         </Button>
       </form>
 
-      <ul className="flex flex-col gap-2">
-        {students.map((student) => {
-          const activeAbsence = student.absences[0];
-          const status = deriveStatus(
-            activeAbsence
-              ? {
-                  status: "ACTIVE",
-                  plannedReturnAt: activeAbsence.plannedReturnAt,
-                }
-              : null,
-            now,
-          );
-          return (
-            <li key={student.id}>
-              <Link
-                href={`/staff/schueler/${student.id}`}
-                className="hover:bg-accent flex items-center justify-between gap-4 rounded-2xl border p-4 shadow-sm"
-              >
-                <div>
-                  <p className="font-medium">
-                    {student.firstName} {student.lastName}
-                  </p>
-                  <p className="text-muted-foreground text-sm">
-                    {student.schoolClass ?? "–"} ·{" "}
-                    {student.residentialArea?.name ?? "–"}
-                  </p>
-                </div>
-                <StatusBadge status={status} />
-              </Link>
-            </li>
-          );
-        })}
-      </ul>
+      <GroupActionsPanel students={studentRows} />
     </div>
   );
 }
