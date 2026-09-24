@@ -615,3 +615,33 @@ Nachbau darüber (z. B. als Scatter mit Custom-Shape) wäre komplexer und wenige
 einfaches, mit `color-mix()` eingefärbtes CSS-Grid mit `title`-Tooltips pro Zelle. Trendvergleich
 (häufigste Gründe, Ziel-Leaderboard) nutzt weiterhin Recharts, konsistent mit den bestehenden
 Diagrammen aus Phase 5.
+
+## Erweiterung: Gruppen-Sammelaktionen
+
+**Auswahl kann ungültige Kandidaten enthalten — Server Action überspringt statt abzulehnen.**
+Ein Mitarbeiter markiert auf `/staff/schueler` beliebige Schüler für einen gemeinsamen
+Gruppen-Ausgang oder eine Gruppen-Rückkehr; die Auswahl kann dabei Schüler enthalten, für die die
+Aktion nicht zulässig ist (z. B. ein bereits abwesender Schüler beim Gruppen-Ausgang, oder ein
+gerade eingecheckter beim erneuten Klick auf "Gruppen-Rückkehr"). `selectEligibleForGroupCheckOut`/
+`selectEligibleForGroupCheckIn` (`src/domain/group-actions.ts`, reine Funktionen mit Unit-Tests)
+trennen die tatsächlich ausführbare Teilmenge von den zu überspringenden Schülern — die Server
+Action meldet einen Teilerfolg mit Namen der übersprungenen Schüler statt die gesamte Aktion
+abzulehnen. Domänenregel 2 (maximal eine aktive Abwesenheit pro Schüler) bleibt dabei die
+verbindliche Wahrheit: die Server Action liest den aktuellen Abwesenheitsstatus frisch aus der DB,
+nicht aus dem (potenziell veralteten) Client-State, und fängt einen verbliebenen Wettlauf zusätzlich
+über den bestehenden `one_active_absence`-Unique-Index ab (wie `checkOutAction`).
+
+**Kein neues Datenbankfeld für "wer hat ausgecheckt".** Die Audit-Log-Einträge (`actorId` = der
+handelnde Mitarbeiter, `action: "CHECK_OUT"`/`"CHECK_IN"`, `targetUserId` = betroffener Schüler)
+protokollieren jede Gruppenaktion bereits vollständig — ein zu `checkedInById` symmetrisches
+`checkedOutById`-Feld auf `Absence` würde denselben Zweck doppeln, ohne dass `checkedInById` selbst
+aktuell irgendwo in der UI angezeigt wird. Ein gemeinsamer, pro Aufruf generierter `groupActionId`
+verknüpft die entstehenden Audit-Log-Zeilen nur in `metadata` für die Nachvollziehbarkeit, ohne die
+etablierten Aktionswerte zu ändern.
+
+**Gruppen-Sammelaktionen leben auf `/staff/schueler` statt einer eigenen Route.** Diese Seite zeigt
+bereits alle Schüler mit Status — die natürliche Stelle für eine Mehrfachauswahl, die sowohl
+anwesende (für den Gruppen-Ausgang) als auch abwesende Schüler (für die Gruppen-Rückkehr) umfassen
+kann. Die bisherige Server-Komponente wurde dafür in eine Client-Komponente
+(`src/components/staff/group-actions-panel.tsx`) überführt, da die Auswahl clientseitigen State
+braucht.

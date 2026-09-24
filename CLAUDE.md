@@ -94,11 +94,11 @@ src/
   actions/             # Server Actions: auth.ts (Login/Logout/Reset), absences.ts
                        # (Aus-/Einchecken/Verlängern), notifications.ts, messages.ts
                        # (Direktnachricht senden/lesen, Notfall-Broadcast), staff.ts
-                       # (Korrektur/Stornierung/Fremd-Einchecken/Verlängerungsfreigabe),
-                       # admin-users.ts (anlegen/bearbeiten/aktivieren/löschen/Rolle/
-                       # Passwort-Reset), admin-settings.ts (Wohnbereiche/Einstellungen),
-                       # admin-live.ts (Fallback-Poll-Server-Action), push.ts
-                       # (Web-Push-Abo speichern/entfernen)
+                       # (Korrektur/Stornierung/Fremd-Einchecken/Verlängerungsfreigabe,
+                       # Gruppen-Ausgang/-Rückkehr), admin-users.ts (anlegen/bearbeiten/
+                       # aktivieren/löschen/Rolle/Passwort-Reset), admin-settings.ts
+                       # (Wohnbereiche/Einstellungen), admin-live.ts (Fallback-Poll-
+                       # Server-Action), push.ts (Web-Push-Abo speichern/entfernen)
   domain/              # Reine Domänenfunktionen — keine I/O: status.ts (deriveStatus),
                        # session.ts, rate-limit.ts, duration.ts, quick-return-times.ts,
                        # absence-reason.ts (feste Gründe als Enum im Code),
@@ -110,7 +110,8 @@ src/
                        # retention.ts (Hard-Delete-Kandidaten-Regel), messaging.ts
                        # (canSendMessageTo-Regel, Konversations-Zusammenfassung),
                        # calendar.ts (Kalender-Gruppierung pro Monat), stats-extended.ts
-                       # (Heatmap Wochentag×Uhrzeit, Ziel-Leaderboard, Trendvergleich)
+                       # (Heatmap Wochentag×Uhrzeit, Ziel-Leaderboard, Trendvergleich),
+                       # group-actions.ts (Eligibility-Filter für Gruppen-Sammelaktionen)
   lib/                 # Querschnitt: authz.ts (inkl. requireApiRole für Route Handler),
                        # db.ts, password.ts, roles.ts, tokens.ts, audit.ts, logger.ts,
                        # settings.ts (inkl. dataRetentionMonths), time.ts
@@ -130,6 +131,8 @@ src/
     stats/             # stats-charts.tsx (Recharts, "use client"), stats-filter-form.tsx,
                        # stats-extended-charts.tsx (Heatmap/Trend/Leaderboard, "use client")
     calendar/          # absence-calendar.tsx (Monatskalender, Server-Komponente)
+    staff/             # group-actions-panel.tsx (Schüler-Mehrfachauswahl +
+                       # Gruppen-Ausgang/-Rückkehr-Sheets, "use client")
     admin/             # user-form-sheet.tsx, user-row-actions.tsx, role-select.tsx,
                        # live-overview-client.tsx (SSE + Fallback-Polling)
     bottom-nav.tsx, status-badge.tsx, theme-toggle.tsx, check-in-button.tsx,

@@ -8,7 +8,7 @@ import { ABSENCE_REASONS } from "@/domain/absence-reason";
  * zusätzlich in der Server Action geprüft (dort ist die aktuelle
  * DB-Einstellung bekannt) — siehe src/actions/absences.ts.
  */
-const MAX_PLANNED_DAYS_AHEAD = 14;
+export const MAX_PLANNED_DAYS_AHEAD = 14;
 
 export const checkOutSchema = z
   .object({
